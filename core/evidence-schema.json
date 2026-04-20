@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Evidence Schema",
+  "description": "Schema for evidence in the BHIV system",
+  "type": "object",
+  "properties": {
+    "evidenceId": {
+      "type": "string",
+      "description": "Unique identifier for the evidence"
+    },
+    "caseId": {
+      "type": "string",
+      "description": "Identifier for the case this evidence belongs to"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["document", "image", "audio", "video", "transaction"],
+      "description": "Type of evidence"
+    },
+    "contentType": {
+      "type": "string",
+      "description": "MIME type of the evidence content"
+    },
+    "hash": {
+      "type": "string",
+      "description": "Cryptographic hash of the evidence"
+    },
+    "storagePointer": {
+      "type": "string",
+      "description": "Pointer to the evidence in storage (e.g., bucket path)"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when evidence was created"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata for the evidence",
+      "properties": {
+        "fileName": {
+          "type": "string",
+          "description": "Original file name"
+        },
+        "fileSize": {
+          "type": "integer",
+          "description": "Size of the file in bytes"
+        },
+        "uploadedBy": {
+          "type": "string",
+          "description": "User who uploaded the evidence"
+        }
+      }
+    }
+  },
+  "required": ["evidenceId", "caseId", "type", "hash", "storagePointer"],
+  "additionalProperties": false
+}

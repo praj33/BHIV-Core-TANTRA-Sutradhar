@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # Core Events API
+  core-events:
+    build:
+      context: .
+      dockerfile: core/Dockerfile
+    ports:
+      - "8004:8004"
+    environment:
+      - PYTHONPATH=/app
+    command: ["python", "core/events/core_events.py", "--port", "8004"]
+    volumes:
+      - .:/app
+    depends_on:
+      - mongodb
+
+  # Core Webhooks Service
+  core-webhooks:
+    build:
+      context: .
+      dockerfile: core/Dockerfile
+    ports:
+      - "8005:8005"
+    environment:
+      - PYTHONPATH=/app
+    command: ["python", "core/events/webhooks.py", "--port", "8005"]
+    volumes:
+      - .:/app
+    depends_on:
+      - mongodb
+
+  # Main BHIV Core API (existing)
+  bhiv-core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      - PYTHONPATH=/app
+    command: ["python", "core_api.py", "--port", "8003"]
+    volumes:
+      - .:/app
+    depends_on:
+      - mongodb
+
+  # MongoDB for storage
+  mongodb:
+    image: mongo:5.0
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - mongodb_data:/data/db
+
+  # Qdrant for vector storage
+  qdrant:
+    image: qdrant/qdrant:v1.0.0
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+volumes:
+  mongodb_data:
+  qdrant_data:

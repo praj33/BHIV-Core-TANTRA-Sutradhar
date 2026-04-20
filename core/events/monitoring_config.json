@@ -1,0 +1,18 @@
+{
+  "monitoring_endpoints": {
+    "events_status": "/monitoring/events",
+    "replay_tool": "/monitoring/replay/{event_id}",
+    "health_check": "/health"
+  },
+  "replay_instructions": {
+    "step_1": "Identify the failed event by checking monitoring events",
+    "step_2": "Use the GET /monitoring/events endpoint to find the event ID",
+    "step_3": "Call POST /monitoring/replay/{event_id} with the event ID",
+    "step_4": "Monitor the replay status through the monitoring endpoints"
+  },
+  "dashboard_links": {
+    "events_dashboard": "http://localhost:3000/dashboard/events",
+    "system_health": "http://localhost:3000/dashboard/health",
+    "replay_monitor": "http://localhost:3000/dashboard/replay"
+  }
+}

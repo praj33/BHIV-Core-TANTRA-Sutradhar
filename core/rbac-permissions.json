@@ -1,0 +1,48 @@
+{
+  "roles": {
+    "admin": {
+      "permissions": [
+        "core.events.create",
+        "core.events.read",
+        "core.events.update",
+        "core.events.delete",
+        "core.webhooks.receive",
+        "core.webhooks.replay",
+        "core.monitoring.read",
+        "core.monitoring.write",
+        "core.orchestration.rules.manage"
+      ]
+    },
+    "analyst": {
+      "permissions": [
+        "core.events.create",
+        "core.events.read",
+        "core.webhooks.receive",
+        "core.monitoring.read"
+      ]
+    },
+    "auditor": {
+      "permissions": [
+        "core.events.read",
+        "core.monitoring.read"
+      ]
+    },
+    "system": {
+      "permissions": [
+        "core.webhooks.receive",
+        "core.events.create"
+      ]
+    }
+  },
+  "permissions": {
+    "core.events.create": "Create/accept new case events",
+    "core.events.read": "Read/view case events",
+    "core.events.update": "Update/modify case events",
+    "core.events.delete": "Delete case events",
+    "core.webhooks.receive": "Receive webhook callbacks",
+    "core.webhooks.replay": "Replay failed webhook deliveries",
+    "core.monitoring.read": "View monitoring events and system health",
+    "core.monitoring.write": "Log monitoring events",
+    "core.orchestration.rules.manage": "Manage orchestration rules"
+  }
+}

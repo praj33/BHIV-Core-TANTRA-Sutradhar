@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Core Event Schema",
+  "description": "Schema for case events in the BHIV Core system",
+  "type": "object",
+  "properties": {
+    "caseId": {
+      "type": "string",
+      "description": "Unique identifier for the case"
+    },
+    "evidenceId": {
+      "type": "string",
+      "description": "Identifier for the evidence associated with the case"
+    },
+    "riskScore": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Risk score for the case (0-100)"
+    },
+    "actionSuggested": {
+      "type": "string",
+      "enum": ["approve", "reject", "escalate", "review", "freeze"],
+      "description": "Suggested action for the case"
+    },
+    "txHash": {
+      "type": "string",
+      "description": "Transaction hash on blockchain (optional)"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the event was created"
+    },
+    "source": {
+      "type": "string",
+      "description": "Source of the event (e.g., backend service, manual entry)"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata for the event",
+      "properties": {
+        "walletAddress": {
+          "type": "string",
+          "description": "Wallet address associated with the case"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount involved in the transaction"
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency of the transaction"
+        }
+      }
+    }
+  },
+  "required": ["caseId", "evidenceId", "riskScore", "actionSuggested"],
+  "additionalProperties": false
+}

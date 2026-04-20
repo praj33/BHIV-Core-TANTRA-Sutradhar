@@ -1,0 +1,14 @@
+2025-10-10 17:11:50,333 - INFO - reinforcement.replay_buffer - Loaded replay buffer from logs/learning_log.json
+2025-10-10 17:11:50,334 - INFO - agents.agent_registry - Loaded 8 agents from config/agent_configs.json
+2025-10-10 17:11:50,334 - INFO - orchestration.core_orchestrator - CoreOrchestrator initialized
+2025-10-10 17:12:12,191 - INFO - reinforcement.replay_buffer - Loaded replay buffer from logs/learning_log.json
+2025-10-10 17:12:24,424 - WARNING - __main__ - ⚠️ Nipun adapter not available: Your currently installed version of Keras is Keras 3, but this is not yet supported in Transformers. Please install the backwards-compatible tf-keras package with `pip install tf-keras`.
+2025-10-10 17:12:47,733 - INFO - reinforcement.replay_buffer - Loaded replay buffer from logs/learning_log.json
+2025-10-10 17:12:57,778 - WARNING - __main__ - ⚠️ Nipun adapter not available: Your currently installed version of Keras is Keras 3, but this is not yet supported in Transformers. Please install the backwards-compatible tf-keras package with `pip install tf-keras`.
+2025-10-10 17:13:57,365 - INFO - reinforcement.replay_buffer - Loaded replay buffer from logs/learning_log.json
+2025-10-10 17:14:07,410 - WARNING - __main__ - ⚠️ Nipun adapter not available: Your currently installed version of Keras is Keras 3, but this is not yet supported in Transformers. Please install the backwards-compatible tf-keras package with `pip install tf-keras`.
+2025-10-10 17:15:40,914 - WARNING - tensorflow - From C:\Users\nisar\AppData\Roaming\Python\Python313\site-packages\tf_keras\src\losses.py:2976: The name tf.losses.sparse_softmax_cross_entropy is deprecated. Please use tf.compat.v1.losses.sparse_softmax_cross_entropy instead.
+
+2025-10-10 17:15:44,004 - INFO - reinforcement.template_selector - TemplateSelector initialized with epsilon=0.2
+2025-10-10 17:15:44,007 - INFO - utils.response_composer - ResponseComposer initialized with grounding verification
+2025-10-10 17:15:44,093 - INFO - __main__ - BHIV MCP Bridge starting up...

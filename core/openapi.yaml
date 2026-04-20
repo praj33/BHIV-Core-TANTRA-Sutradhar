@@ -1,0 +1,338 @@
+openapi: 3.0.0
+info:
+  title: BHIV Core API
+  description: API for the BHIV Core Orchestration Layer
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8004
+    description: Local development server
+
+paths:
+  /core/events:
+    post:
+      summary: Accept case events
+      description: Accept case events for processing and orchestration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventPayload'
+      responses:
+        '202':
+          description: Event accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '400':
+          description: Bad request
+        '500':
+          description: Internal server error
+
+  /core/events/{core_event_id}:
+    get:
+      summary: Get event status
+      description: Get the status of a specific event
+      parameters:
+        - name: core_event_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '404':
+          description: Event not found
+
+  /core/case/{case_id}/status:
+    get:
+      summary: Get case reconciliation status
+      description: Get the reconciliation status between core ledger and blockchain for a specific case
+      parameters:
+        - name: case_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Case reconciliation status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseStatusResponse'
+        '404':
+          description: Case not found
+
+  /health:
+    get:
+      summary: Health check
+      description: Check the health status of the service
+      responses:
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /callbacks/escalation-result:
+    post:
+      summary: Handle escalation result
+      description: Handle escalation result callbacks from orchestration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookPayload'
+      responses:
+        '200':
+          description: Webhook accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookResponse'
+
+  /callbacks/{callback_type}:
+    post:
+      summary: Handle generic callback
+      description: Handle generic callback events
+      parameters:
+        - name: callback_type
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookPayload'
+      responses:
+        '200':
+          description: Webhook accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookResponse'
+
+  /monitoring/events:
+    get:
+      summary: Get monitoring events
+      description: Get monitoring events, optionally filtered by event type
+      parameters:
+        - name: event_type
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Monitoring events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MonitoringEvent'
+
+    post:
+      summary: Log monitoring event
+      description: Log a monitoring event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MonitoringEvent'
+      responses:
+        '200':
+          description: Event logged
+
+  /monitoring/replay/{event_id}:
+    post:
+      summary: Replay failed event
+      description: Replay a failed event delivery
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Replay initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReplayResponse'
+        '404':
+          description: Event not found
+
+components:
+  schemas:
+    EventPayload:
+      type: object
+      required:
+        - caseId
+        - evidenceId
+        - riskScore
+        - actionSuggested
+      properties:
+        caseId:
+          type: string
+          description: Unique identifier for the case
+        evidenceId:
+          type: string
+          description: Identifier for the evidence associated with the case
+        riskScore:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Risk score for the case (0-100)
+        actionSuggested:
+          type: string
+          enum: [approve, reject, escalate, review, freeze]
+          description: Suggested action for the case
+        txHash:
+          type: string
+          description: Transaction hash on blockchain
+        source:
+          type: string
+          description: Source of the event
+        metadata:
+          type: object
+          description: Additional metadata for the event
+          properties:
+            walletAddress:
+              type: string
+              description: Wallet address associated with the case
+            amount:
+              type: number
+              description: Amount involved in the transaction
+            currency:
+              type: string
+              description: Currency of the transaction
+
+    EventResponse:
+      type: object
+      required:
+        - coreEventId
+        - status
+        - timestamp
+      properties:
+        coreEventId:
+          type: string
+          description: Unique identifier for the core event
+        status:
+          type: string
+          description: Status of the event
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp when the event was accepted
+
+    CaseStatusResponse:
+      type: object
+      required:
+        - caseId
+        - reconciliation
+        - overallStatus
+      properties:
+        caseId:
+          type: string
+        reconciliation:
+          type: array
+          items:
+            type: object
+            properties:
+              evidenceId:
+                type: string
+              txHash:
+                type: string
+              status:
+                type: string
+              details:
+                type: string
+        overallStatus:
+          type: string
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        service:
+          type: string
+        version:
+          type: string
+        events_count:
+          type: integer
+
+    WebhookPayload:
+      type: object
+      required:
+        - outcomeId
+        - caseId
+        - eventType
+        - result
+        - timestamp
+      properties:
+        outcomeId:
+          type: string
+        caseId:
+          type: string
+        eventType:
+          type: string
+        result:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+
+    WebhookResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        messageId:
+          type: string
+
+    MonitoringEvent:
+      type: object
+      required:
+        - eventId
+        - eventType
+        - status
+        - timestamp
+      properties:
+        eventId:
+          type: string
+        eventType:
+          type: string
+        status:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        details:
+          type: string
+
+    ReplayResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        eventId:
+          type: string
+        monitoringEventId:
+          type: string

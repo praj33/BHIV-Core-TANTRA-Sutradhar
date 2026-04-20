@@ -1,0 +1,30 @@
+{
+  "callback_example": {
+    "endpoint": "POST /callbacks/escalation-result",
+    "headers": {
+      "Authorization": "Bearer <auth_token>",
+      "Content-Type": "application/json"
+    },
+    "payload": {
+      "outcomeId": "outcome-12345",
+      "caseId": "case-67890",
+      "eventType": "escalation_completed",
+      "result": {
+        "status": "approved",
+        "decision": "Escalation approved by risk team",
+        "assignedTo": "analyst-001",
+        "nextSteps": ["investigate_further", "contact_customer"]
+      },
+      "timestamp": "2025-10-06T10:30:00Z"
+    },
+    "expected_response": {
+      "status": "received",
+      "messageId": "msg-54321"
+    }
+  },
+  "authentication": {
+    "method": "Bearer Token",
+    "token_example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "header": "Authorization: Bearer <token>"
+  }
+}

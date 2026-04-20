@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Storage Metadata Schema",
+  "description": "Schema for storage metadata in the BHIV system",
+  "type": "object",
+  "properties": {
+    "storageId": {
+      "type": "string",
+      "description": "Unique identifier for the storage entry"
+    },
+    "objectId": {
+      "type": "string",
+      "description": "Identifier for the object stored"
+    },
+    "objectType": {
+      "type": "string",
+      "enum": ["evidence", "case", "agent_output", "rl_log"],
+      "description": "Type of object stored"
+    },
+    "storagePath": {
+      "type": "string",
+      "description": "Path to the object in storage"
+    },
+    "bucketName": {
+      "type": "string",
+      "description": "Name of the storage bucket"
+    },
+    "size": {
+      "type": "integer",
+      "description": "Size of the object in bytes"
+    },
+    "contentType": {
+      "type": "string",
+      "description": "MIME type of the stored object"
+    },
+    "checksum": {
+      "type": "string",
+      "description": "Checksum for data integrity verification"
+    },
+    "uploadedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the object was uploaded"
+    },
+    "uploadedBy": {
+      "type": "string",
+      "description": "User or service that uploaded the object"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata for the storage entry"
+    }
+  },
+  "required": ["storageId", "objectId", "objectType", "storagePath", "bucketName", "size", "uploadedAt"],
+  "additionalProperties": false
+}

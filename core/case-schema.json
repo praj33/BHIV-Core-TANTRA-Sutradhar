@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Case Schema",
+  "description": "Schema for cases in the BHIV system",
+  "type": "object",
+  "properties": {
+    "caseId": {
+      "type": "string",
+      "description": "Unique identifier for the case"
+    },
+    "title": {
+      "type": "string",
+      "description": "Title of the case"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the case"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["open", "in_progress", "escalated", "closed", "rejected"],
+      "description": "Current status of the case"
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "description": "Priority level of the case"
+    },
+    "riskScore": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Risk score for the case (0-100)"
+    },
+    "assignedTo": {
+      "type": "string",
+      "description": "User or team assigned to the case"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the case was created"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the case was last updated"
+    },
+    "evidenceIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of evidence IDs associated with this case"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags associated with the case"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata for the case"
+    }
+  },
+  "required": ["caseId", "title", "status", "createdAt"],
+  "additionalProperties": false
+}

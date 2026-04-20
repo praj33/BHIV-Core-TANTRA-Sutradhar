@@ -1,0 +1,24 @@
+/venv
+/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp output files
+demo_output.txt
+test_results.txt
+test_output.txt
+
+# Pravah signal logs (generated at runtime)
+logs/*.json

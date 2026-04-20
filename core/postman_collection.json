@@ -1,0 +1,229 @@
+{
+  "info": {
+    "name": "BHIV Core API",
+    "description": "Postman collection for BHIV Core API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Core Events",
+      "item": [
+        {
+          "name": "Accept Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caseId\": \"case-12345\",\n  \"evidenceId\": \"evidence-67890\",\n  \"riskScore\": 85.5,\n  \"actionSuggested\": \"escalate\",\n  \"txHash\": \"0x123456789abcdef\",\n  \"source\": \"backend-service\",\n  \"metadata\": {\n    \"walletAddress\": \"0xabcdef123456789\",\n    \"amount\": 15000,\n    \"currency\": \"USD\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/core/events",
+              "host": ["{{base_url}}"],
+              "path": ["core", "events"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Event Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/core/events/{{core_event_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["core", "events", "{{core_event_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Case Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/core/case/{{case_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["core", "case", "{{case_id}}", "status"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "Escalation Result Callback",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"outcomeId\": \"outcome-12345\",\n  \"caseId\": \"case-67890\",\n  \"eventType\": \"escalation_completed\",\n  \"result\": {\n    \"status\": \"approved\",\n    \"decision\": \"Escalation approved by risk team\",\n    \"assignedTo\": \"analyst-001\",\n    \"nextSteps\": [\"investigate_further\", \"contact_customer\"]\n  },\n  \"timestamp\": \"2025-10-06T10:30:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/callbacks/escalation-result",
+              "host": ["{{base_url}}"],
+              "path": ["callbacks", "escalation-result"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Generic Callback",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"outcomeId\": \"outcome-54321\",\n  \"caseId\": \"case-09876\",\n  \"eventType\": \"review_completed\",\n  \"result\": {\n    \"status\": \"completed\",\n    \"notes\": \"Review completed successfully\"\n  },\n  \"timestamp\": \"2025-10-06T11:45:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/callbacks/{{callback_type}}",
+              "host": ["{{base_url}}"],
+              "path": ["callbacks", "{{callback_type}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Monitoring",
+      "item": [
+        {
+          "name": "Get Monitoring Events",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/monitoring/events?event_type={{event_type}}",
+              "host": ["{{base_url}}"],
+              "path": ["monitoring", "events"],
+              "query": [
+                {
+                  "key": "event_type",
+                  "value": "{{event_type}}",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Log Monitoring Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"event-11111\",\n  \"eventType\": \"test_event\",\n  \"status\": \"success\",\n  \"timestamp\": \"2025-10-06T12:00:00Z\",\n  \"details\": \"Test monitoring event\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/monitoring/events",
+              "host": ["{{base_url}}"],
+              "path": ["monitoring", "events"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Replay Failed Event",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/monitoring/replay/{{event_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["monitoring", "replay", "{{event_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8004",
+      "type": "string"
+    },
+    {
+      "key": "core_event_id",
+      "value": "event-12345",
+      "type": "string"
+    },
+    {
+      "key": "case_id",
+      "value": "case-12345",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "your-auth-token-here",
+      "type": "string"
+    },
+    {
+      "key": "callback_type",
+      "value": "review-completed",
+      "type": "string"
+    },
+    {
+      "key": "event_type",
+      "value": "event_processed",
+      "type": "string"
+    },
+    {
+      "key": "event_id",
+      "value": "event-11111",
+      "type": "string"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "rules": [
+    {
+      "id": "high_risk_escalation",
+      "name": "High Risk Escalation",
+      "description": "Auto-escalate cases with risk score >= 80",
+      "condition": {
+        "field": "riskScore",
+        "operator": ">=",
+        "value": 80
+      },
+      "action": "escalate",
+      "enabled": true
+    },
+    {
+      "id": "high_value_transfer",
+      "name": "High Value Transfer Flag",
+      "description": "Flag cases with transaction value >= $10,000",
+      "condition": {
+        "field": "metadata.amount",
+        "operator": ">=",
+        "value": 10000
+      },
+      "action": "escalate",
+      "enabled": true
+    },
+    {
+      "id": "freeze_action",
+      "name": "Freeze Action Trigger",
+      "description": "Trigger multisig for freeze actions with risk score >= 70",
+      "condition": {
+        "field": "actionSuggested",
+        "operator": "==",
+        "value": "freeze"
+      },
+      "additional_condition": {
+        "field": "riskScore",
+        "operator": ">=",
+        "value": 70
+      },
+      "action": "multisig_freeze",
+      "enabled": true
+    },
+    {
+      "id": "duplicate_wallet_detection",
+      "name": "Duplicate Wallet Detection",
+      "description": "Detect and flag duplicate wallets across cases",
+      "condition": {
+        "field": "metadata.walletAddress",
+        "operator": "exists",
+        "value": true
+      },
+      "action": "cross_case_alert",
+      "enabled": true
+    }
+  ]
+}
