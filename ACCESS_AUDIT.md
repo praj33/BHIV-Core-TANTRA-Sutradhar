@@ -2,18 +2,18 @@
 
 **Date:** 2026-04-24
 **Auditor:** Raj Prajapati
-**Status:** PENDING COMPLETION
+**Status:** IN PROGRESS (2 of N repos secured)
 
 ---
 
 ## Repositories
 
-| # | Repository | Visibility | Action Required |
-|---|-----------|------------|-----------------|
-| 1 | `praj33/BHIV-Core-TANTRA-Sutradhar` | PUBLIC | MAKE PRIVATE |
-| 2 | `tensorwhiz141/bhiv` | _(check)_ | MAKE PRIVATE / RESTRICT |
+| # | Repository | Visibility | Status | Date |
+|---|-----------|------------|--------|------|
+| 1 | `praj33/BHIV-Core-TANTRA-Sutradhar` | PRIVATE | DONE | 2026-04-24 |
+| 2 | `tensorwhiz141/bhiv` | PRIVATE | DONE | 2026-04-24 |
 
-> **Add any additional repos below:**
+> **Remaining repos (to be secured in coming days):**
 
 | # | Repository | Visibility | Action Required |
 |---|-----------|------------|-----------------|
