@@ -1,0 +1,41 @@
+﻿============================================================
+  PRAVAH INTEGRATION TEST -- CORE SIDE
+============================================================
+  Target: 54.156.236.10
+  Time:   2026-04-24T12:36:47.253241+00:00
+
+    Generating trace_id from Core...
+    trace_id = d1ffcd6e-4bd0-49ff-af82-fa4fa4048c83
+    source   = core_integration_test
+    timestamp = 2026-04-24T12:36:47.253241+00:00
+  [PASS] 1. Trace Origin (Core-generated)
+    Decision: ALLOW
+    Enforcement: CLEARED
+  [PASS] 2. Sarathi Enforcement (internal)
+    POST http://54.156.236.10:30001/login
+    X-TRACE-ID: d1ffcd6e-4bd0-49ff-af82-fa4fa4048c83
+    Response: 200 -- 
+<h2>Dashboard - Web1</h2>
+<p>Welcome test_user</p>
+<p><b>Trace ID:</b> d1ffcd6e-4bd0-49ff-af82-fa4f
+  [PASS] 3. Login with Core trace_id
+    POST http://54.156.236.10:30001/click
+    Response: 200 -- clicked (trace=d1ffcd6e-4bd0-49ff-af82-fa4fa4048c83)
+  [PASS] 4. Click with same trace_id
+    POST http://54.156.236.10:30005/decision
+    Response: 200 -- {"executer_response":{"error":"","execution_id":"09b39d39-6fa6-4c68-b8a4-9d5a5a2c6978","latency":0.3
+  [PASS] 5. Decision via Sarathi endpoint
+    POST http://54.156.236.10:30005/decision (invalid service)
+    Response: 200 -- {"executer_response":{"error":"invalid service","execution_id":"4459f210-446d-4c5b-b332-a82e95774458
+  [PASS] 6. Failure test (invalid service)
+    POST http://54.156.236.10:30003/execute-action (should be unauthorized)
+    Response: 403 -- {"error":"unauthorized"}
+
+  [PASS] 7. Security (direct execute blocked)
+    trace_id preserved: 963df08f-f007-43a1-b10f-9a1a4142f500
+    Signals: origin, decision, enforcement -- all present
+  [PASS] 8. Trace survives full flow
+
+============================================================
+  RESULTS: 8 passed, 0 failed, 8 total
+============================================================
