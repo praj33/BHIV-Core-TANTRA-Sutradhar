@@ -26,12 +26,18 @@ class CoreOrchestrator:
         """
         Execute a task by routing it to the appropriate agent.
         
+        ENFORCEMENT: task_payload MUST contain execution_token and trace_id.
+        This is defense-in-depth — even if API layer is bypassed,
+        orchestrator blocks execution without token.
+        
         Args:
             task_payload: Dictionary containing task information
                 Required keys:
                     - input: The input data to process
-                    - agent: The agent to use (optional, will be selected if not provided)
+                    - execution_token: Token from Sarathi (REQUIRED)
+                    - trace_id: Trace identifier (REQUIRED)
                 Optional keys:
+                    - agent: The agent to use (optional, will be selected if not provided)
                     - task_id: Unique identifier for the task
                     - input_type: Type of input data
                     - tags: List of tags for the task
@@ -41,6 +47,17 @@ class CoreOrchestrator:
         Returns:
             Dictionary with task results and execution metadata
         """
+        # ENFORCEMENT CHECK (defense-in-depth)
+        execution_token = task_payload.get('execution_token')
+        trace_id = task_payload.get('trace_id')
+        if not execution_token or not trace_id:
+            logger.warning(f"BLOCKED: execute_task called without token/trace_id")
+            return {
+                "task_id": task_payload.get('task_id', 'unknown'),
+                "error": "EXECUTION BLOCKED: execution_token and trace_id required",
+                "status": "blocked"
+            }
+
         task_id = task_payload.get('task_id', str(uuid.uuid4()))
         input_data = task_payload.get('input', '')
         agent_name = task_payload.get('agent')
