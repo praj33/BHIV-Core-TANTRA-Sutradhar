@@ -30,7 +30,7 @@ from core.authority import callSovereign, callSarathi
 from core.trace.sarathi_enforcer import SarathiEnforcementError
 from core.authority.execution_gate import (
     register_token, validate_execution_token, gated_execute,
-    mark_token_used, ExecutionBlockedError, _valid_tokens, _used_tokens,
+    mark_token_used, ExecutionBlockedError, _token_registry, _used_tokens,
 )
 from core.authority.bucket_writer import (
     append_to_bucket, verify_bucket_record, BucketWriteError,
@@ -50,7 +50,7 @@ def run_test(name, test_fn):
 
 def _cleanup():
     """Reset state between tests."""
-    _valid_tokens.clear()
+    _token_registry.clear()
     _used_tokens.clear()
 
 
