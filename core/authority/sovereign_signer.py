@@ -254,8 +254,15 @@ def compute_decision_id(trace_id: str, input_hash: str, evaluator_id: str) -> st
 def compute_decision_hash(payload: Dict[str, str]) -> str:
     """
     Compute SHA-256 hash of the canonical decision payload.
-    EXCLUDES the signature field (hash is what gets signed).
-    Field ordering is FIXED by CANONICAL_FIELD_ORDER.
+
+    Serialization: RFC 8785 (JSON Canonicalization Scheme)
+      - Keys sorted lexicographically (sort_keys=True)
+      - No whitespace (separators=(",",":"))
+      - UTF-8 encoding
+    Signing: RFC 8032 (Ed25519) — applied in sign_decision()
+
+    EXCLUDES: ed25519_signature, decision_hash, decision_id
+    (signature is computed FROM this hash; decision_id and decision_hash are derived)
 
     Args:
         payload: Decision payload (with or without signature)
@@ -263,15 +270,15 @@ def compute_decision_hash(payload: Dict[str, str]) -> str:
     Returns:
         SHA-256 hex digest
     """
-    # Build canonical JSON without signature and decision_hash
-    canonical = OrderedDict()
+    # Build canonical JSON — exclude derived/computed fields
+    canonical = {}
     for field in CANONICAL_FIELD_ORDER:
-        if field in ("ed25519_signature", "decision_hash"):
+        if field in ("ed25519_signature", "decision_hash", "decision_id"):
             continue  # Exclude from hash computation
         canonical[field] = payload.get(field, "")
 
-    # Deterministic serialization: sorted keys, no spaces, ensure_ascii
-    canonical_json = json.dumps(canonical, sort_keys=False, separators=(",", ":"), ensure_ascii=True)
+    # RFC 8785: sorted keys, no whitespace, UTF-8
+    canonical_json = json.dumps(canonical, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
     return hashlib.sha256(canonical_json.encode("utf-8")).hexdigest()
 
