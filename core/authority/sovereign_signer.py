@@ -134,6 +134,7 @@ CANONICAL_FIELD_ORDER = [
     "schema_version",
     "trace_id",
     "decision",
+    "decision_id",
     "decision_hash",
     "policy_reference",
     "input_hash",
@@ -192,11 +193,15 @@ def build_canonical_decision(
     ts = timestamp or get_normalized_timestamp()
     input_hash = hashlib.sha256(input_data.encode("utf-8")).hexdigest()
 
+    # Compute decision_id: uuid_shape(SHA256(canonical({trace_id, input_hash, evaluator_id})))
+    decision_id = compute_decision_id(trace_id, input_hash, evaluator_id)
+
     # Build unsigned payload (signature empty for hash computation)
     payload = OrderedDict([
         ("schema_version", SCHEMA_VERSION),
         ("trace_id", trace_id),
         ("decision", decision),
+        ("decision_id", decision_id),
         ("decision_hash", ""),  # Computed below
         ("policy_reference", policy_reference),
         ("input_hash", input_hash),
@@ -209,6 +214,37 @@ def build_canonical_decision(
     payload["decision_hash"] = compute_decision_hash(payload)
 
     return dict(payload)
+
+
+# ═══════════════════════════════════════════════════════════
+# DECISION ID COMPUTATION
+# ═══════════════════════════════════════════════════════════
+
+def compute_decision_id(trace_id: str, input_hash: str, evaluator_id: str) -> str:
+    """
+    Compute decision_id matching Sarathi's formula:
+      decision_id = uuid_shape( SHA256( canonical({ trace_id, input_hash, evaluator_id }) ) )
+
+    Canonical JSON: deterministic, sorted keys, no spaces.
+    UUID shape: first 32 hex chars formatted as 8-4-4-4-12.
+
+    Args:
+        trace_id: Trace ID from Core
+        input_hash: SHA-256 of the input data
+        evaluator_id: Authorized evaluator identity
+
+    Returns:
+        UUID-shaped decision_id string
+    """
+    canonical = json.dumps(
+        {"evaluator_id": evaluator_id, "input_hash": input_hash, "trace_id": trace_id},
+        sort_keys=True, separators=(",", ":"), ensure_ascii=True,
+    )
+    raw_hash = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+    # UUID shape: 8-4-4-4-12 from first 32 hex chars
+    h = raw_hash[:32]
+    return f"{h[:8]}-{h[8:12]}-{h[12:16]}-{h[16:20]}-{h[20:32]}"
 
 
 # ═══════════════════════════════════════════════════════════

@@ -41,8 +41,8 @@ from core.authority.bucket_writer import (
 from core.authority.insightflow_client import emitTrace, buildTraceChain
 from core.authority.sovereign_signer import (
     build_canonical_decision, sign_decision, verify_signature,
-    compute_decision_hash, create_signed_decision, get_public_key_hex,
-    load_public_key_from_hex, get_canonical_bytes,
+    compute_decision_hash, compute_decision_id, create_signed_decision,
+    get_public_key_hex, load_public_key_from_hex, get_canonical_bytes,
     SovereignSigningError, EvaluatorIdentityError,
     SCHEMA_VERSION, CANONICAL_FIELD_ORDER, VALID_DECISIONS,
     AUTHORIZED_EVALUATORS,
@@ -130,6 +130,71 @@ def test_input_hash_computed():
     )
     expected = hashlib.sha256("test input for hashing".encode()).hexdigest()
     assert payload["input_hash"] == expected
+
+
+def test_decision_id_computed():
+    """decision_id must be UUID-shaped and deterministic."""
+    payload = build_canonical_decision(
+        trace_id="abcd1234-5678-9012-3456-abcdefabcdef",
+        decision="ALLOW",
+        input_data="decision id test",
+    )
+    did = payload["decision_id"]
+    # Must be UUID shape: 8-4-4-4-12
+    parts = did.split("-")
+    assert len(parts) == 5, f"Not UUID shape: {did}"
+    assert len(parts[0]) == 8
+    assert len(parts[1]) == 4
+    assert len(parts[2]) == 4
+    assert len(parts[3]) == 4
+    assert len(parts[4]) == 12
+
+
+def test_decision_id_deterministic():
+    """Same inputs -> same decision_id."""
+    ts = "2026-06-03T12:00:00+00:00"
+    d1 = build_canonical_decision(
+        trace_id="abcd1234-det-did-0000-000000000001",
+        decision="ALLOW",
+        input_data="same input",
+        timestamp=ts,
+    )["decision_id"]
+    d2 = build_canonical_decision(
+        trace_id="abcd1234-det-did-0000-000000000001",
+        decision="ALLOW",
+        input_data="same input",
+        timestamp=ts,
+    )["decision_id"]
+    assert d1 == d2
+
+
+def test_decision_id_matches_sarathi_formula():
+    """decision_id = uuid_shape(SHA256(canonical({trace_id, input_hash, evaluator_id})))"""
+    trace_id = "abcd1234-sarathi-did-0-000000000001"
+    input_data = "sarathi decision id match"
+    evaluator_id = "sovereign_bhiv_core"
+    input_hash = hashlib.sha256(input_data.encode()).hexdigest()
+
+    # Compute manually (Sarathi's way)
+    import json as _json
+    canonical = _json.dumps(
+        {"evaluator_id": evaluator_id, "input_hash": input_hash, "trace_id": trace_id},
+        sort_keys=True, separators=(",", ":"), ensure_ascii=True,
+    )
+    raw = hashlib.sha256(canonical.encode()).hexdigest()
+    h = raw[:32]
+    expected = f"{h[:8]}-{h[8:12]}-{h[12:16]}-{h[16:20]}-{h[20:32]}"
+
+    # Compute via Core
+    payload = build_canonical_decision(
+        trace_id=trace_id,
+        decision="ALLOW",
+        input_data=input_data,
+        evaluator_id=evaluator_id,
+    )
+
+    assert payload["decision_id"] == expected, \
+        f"Core={payload['decision_id']}, Sarathi={expected}"
 
 
 # ═══════════════════════════════════════════════════════════
@@ -349,8 +414,9 @@ def test_sarathi_can_ingest_schema():
         decision="ALLOW",
         input_data="sarathi test",
     )
-    # Sarathi needs: decision, decision_hash, ed25519_signature, trace_id
+    # Sarathi needs: decision, decision_id, decision_hash, ed25519_signature, trace_id
     assert "decision" in payload
+    assert "decision_id" in payload
     assert "decision_hash" in payload
     assert "ed25519_signature" in payload
     assert "trace_id" in payload
@@ -646,6 +712,9 @@ def main():
     run_test("Valid decisions accepted", test_valid_decisions)
     run_test("Invalid decision rejected", test_invalid_decision_rejected)
     run_test("Input hash computed correctly", test_input_hash_computed)
+    run_test("Decision ID UUID shape", test_decision_id_computed)
+    run_test("Decision ID deterministic", test_decision_id_deterministic)
+    run_test("Decision ID matches Sarathi formula", test_decision_id_matches_sarathi_formula)
 
     print("\n  Phase 2: Deterministic Hashing")
     print("  " + "-" * 40)
