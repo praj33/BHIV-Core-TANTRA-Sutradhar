@@ -81,9 +81,10 @@ def _emit_external(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Emit to external InsightFlow service."""
     url = f"{INSIGHTFLOW_SERVICE_URL}/insightflow/trace"
     data = json.dumps(payload, default=str).encode("utf-8")
+    from core.trace.middleware import get_trace_headers
     req = urllib.request.Request(
         url, data=data,
-        headers={"Content-Type": "application/json"},
+        headers=get_trace_headers(payload.get("trace_id")),
         method="POST",
     )
     try:

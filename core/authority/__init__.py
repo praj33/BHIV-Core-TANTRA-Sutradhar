@@ -34,11 +34,13 @@ SARATHI_SERVICE_URL = os.environ.get("SARATHI_SERVICE_URL", "http://localhost:90
 
 def _http_post(url: str, payload: dict, timeout: int = 10) -> dict:
     """Make an HTTP POST request and return JSON response."""
+    from core.trace.middleware import get_trace_headers
     data = json.dumps(payload).encode("utf-8")
+    headers = get_trace_headers(payload.get("trace_id"))
     req = urllib.request.Request(
         url,
         data=data,
-        headers={"Content-Type": "application/json"},
+        headers=headers,
         method="POST",
     )
     try:

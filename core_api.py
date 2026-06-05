@@ -24,6 +24,7 @@ from core.authority.execution_gate import (
     ExecutionBlockedError,
 )
 from core.authority.bucket_writer import append_to_bucket, BucketWriteError
+from core.trace.middleware import TraceMiddleware
 
 logger = get_logger(__name__)
 
@@ -32,6 +33,9 @@ app = FastAPI(
     description="API for the BHIV Core Orchestration Layer",
     version="1.0.0"
 )
+
+# X-Trace-Id propagation middleware
+app.add_middleware(TraceMiddleware)
 
 class TaskPayload(BaseModel):
     """Payload for executing a single task."""

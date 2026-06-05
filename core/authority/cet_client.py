@@ -54,10 +54,11 @@ def callCET(trace_id: str, input_data: str, decision_hash: str) -> Dict[str, Any
     logger.info(f"Calling CET: trace_id={trace_id}")
 
     try:
+        from core.trace.middleware import get_trace_headers
         data = json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(
             url, data=data,
-            headers={"Content-Type": "application/json"},
+            headers=get_trace_headers(trace_id),
             method="POST",
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
