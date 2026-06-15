@@ -96,29 +96,47 @@ def _callSovereign_external(
     input_data: str,
     context: Optional[Dict[str, Any]] = None,
 ) -> TraceContext:
-    """Call external Sovereign service via HTTP."""
-    url = f"{SOVEREIGN_SERVICE_URL}/sovereign/decide"
+    """Call external Sovereign service via /analyze (Rajaryan's gateway).
+
+    Maps risk_category to decision:
+      LOW/MEDIUM → ALLOW
+      HIGH/CRITICAL → DENY
+    """
+    import hashlib
+    url = f"{SOVEREIGN_SERVICE_URL}/analyze"
     payload = {
-        "trace_id": trace_ctx.trace_id,
-        "input": input_data,
-        "context": context or {},
+        "text": input_data,
     }
 
-    logger.info(f"Calling external Sovereign: trace_id={trace_ctx.trace_id}")
+    logger.info(f"Calling external Sovereign (/analyze): trace_id={trace_ctx.trace_id}")
 
     # FAIL CLOSED: if service is down, raise -- do NOT fallback
     response = _http_post(url, payload)
+
+    # Map risk response to Sovereign decision
+    risk_category = response.get("risk_category", "LOW")
+    if risk_category in ("HIGH", "CRITICAL"):
+        decision = "DENY"
+    else:
+        decision = "ALLOW"
+
+    input_hash = hashlib.sha256(input_data.encode("utf-8")).hexdigest()
 
     # Build decision signal from external response
     decision_signal = TraceSignal(
         layer="sovereign_core",
         signal_type="decision",
-        timestamp=response.get("timestamp", get_normalized_timestamp()),
+        timestamp=get_normalized_timestamp(),
         payload={
-            "decision": response["decision"],
-            "policy_reference": response.get("policy_reference", "external"),
-            "input_hash": response.get("input_hash", ""),
-            "decision_hash": response.get("decision_hash", ""),
+            "decision": decision,
+            "policy_reference": "bhiv.sovereign.risk_scoring@v1.0",
+            "input_hash": input_hash,
+            "decision_hash": hashlib.sha256(
+                f"{decision}:{input_hash}:{risk_category}".encode()
+            ).hexdigest(),
+            "risk_score": response.get("risk_score", 0.0),
+            "risk_category": risk_category,
+            "confidence": response.get("confidence_score", 0.0),
         },
     )
 
