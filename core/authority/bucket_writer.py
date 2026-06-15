@@ -191,25 +191,47 @@ def _compute_record_hash(event: Dict[str, Any]) -> str:
 
 
 def _write_to_bucket_service(record: Dict[str, Any]) -> Dict[str, Any]:
-    """Write to external Bucket service via HTTP."""
-    url = f"{BUCKET_SERVICE_URL}/bucket/artifact"
-    data = json.dumps(record).encode("utf-8")
+    """Write to external Bucket service via HTTP.
+
+    Siddhesh's Bucket schema requires:
+      artifact_id, artifact_type, timestamp_utc, schema_version,
+      source_module_id, payload (execution data goes here)
+    """
+    import uuid as _uuid
     from core.trace.middleware import get_trace_headers
+
+    # Map our internal record to Bucket's envelope schema
+    artifact_id = str(_uuid.uuid4())
+    envelope = {
+        "artifact_id": artifact_id,
+        "artifact_type": "execution_record",
+        "timestamp_utc": record.get("timestamp", get_normalized_timestamp()),
+        "schema_version": "1.0.0",
+        "source_module_id": "bhiv.core.bucket_writer",
+        "payload": record,  # Full execution record as payload
+    }
+
+    url = f"{BUCKET_SERVICE_URL}/bucket/artifact"
+    data = json.dumps(envelope).encode("utf-8")
     req = urllib.request.Request(
         url, data=data,
         headers=get_trace_headers(record.get("trace_id")),
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            json.loads(resp.read().decode("utf-8"))
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            response = json.loads(resp.read().decode("utf-8"))
             logger.info(
                 f"BUCKET WRITE SUCCESS (external): "
-                f"trace_id={record['trace_id']}"
+                f"trace_id={record.get('trace_id')}, "
+                f"artifact_id={artifact_id}, "
+                f"hash={response.get('hash', 'N/A')}"
             )
             return {
                 "status": "written",
-                "bucket_write_id": record["bucket_write_id"],
+                "bucket_write_id": record.get("bucket_write_id", artifact_id),
+                "artifact_id": artifact_id,
+                "hash": response.get("hash", ""),
                 "store": "external",
             }
     except urllib.error.URLError as e:
