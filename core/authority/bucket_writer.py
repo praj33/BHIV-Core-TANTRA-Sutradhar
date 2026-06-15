@@ -192,7 +192,7 @@ def _compute_record_hash(event: Dict[str, Any]) -> str:
 
 def _write_to_bucket_service(record: Dict[str, Any]) -> Dict[str, Any]:
     """Write to external Bucket service via HTTP."""
-    url = f"{BUCKET_SERVICE_URL}/bucket/append"
+    url = f"{BUCKET_SERVICE_URL}/bucket/artifact"
     data = json.dumps(record).encode("utf-8")
     from core.trace.middleware import get_trace_headers
     req = urllib.request.Request(
