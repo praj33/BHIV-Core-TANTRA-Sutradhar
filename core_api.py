@@ -181,6 +181,24 @@ async def health_check():
         "version": "1.0.0"
     }
 
+@app.get("/trace/{trace_id}")
+async def get_trace(trace_id: str):
+    """
+    Reconstruct full execution lineage from a single trace_id.
+    Searches Bucket, InsightFlow, and replay logs.
+    """
+    from core.trace.trace_replay import reconstruct_trace
+    result = reconstruct_trace(trace_id)
+    if result["status"] == "NOT_FOUND":
+        raise HTTPException(status_code=404, detail=f"Trace {trace_id} not found")
+    return result
+
+@app.get("/traces")
+async def list_traces():
+    """List all known trace_ids and their summary."""
+    from core.trace.trace_replay import reconstruct_all_traces
+    return {"traces": reconstruct_all_traces()}
+
 @app.get("/")
 async def root():
     """Root endpoint with API information."""
@@ -190,7 +208,9 @@ async def root():
         "endpoints": {
             "execute_task": "POST /execute_task - Execute a single task",
             "execute_sequence": "POST /execute_sequence - Execute a sequence of tasks",
-            "health": "GET /health - Health check"
+            "health": "GET /health - Health check",
+            "trace": "GET /trace/{trace_id} - Reconstruct execution lineage",
+            "traces": "GET /traces - List all known traces",
         },
         "documentation": "/docs"
     }

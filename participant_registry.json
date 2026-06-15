@@ -1,0 +1,85 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-06-15T08:30:00Z",
+  "participants": {
+    "core": {
+      "owner": "Raj Prajapati",
+      "system": "BHIV Core",
+      "role": "Orchestrator + Trace Origin",
+      "status": "LIVE",
+      "repo": "github.com/praj33/BHIV-Core-TANTRA-Sutradhar",
+      "endpoint": "http://localhost:8003",
+      "auth": {
+        "evaluator_id": "bhiv.sovereign.decision.prod.v1",
+        "public_key_hex": "ca087b33d011dadfef89c2df05301c420766f29ba369d12ff2c601ab637171dc",
+        "key_id": "bhiv.sovereign.decision.prod.v1#ed25519-2026-05",
+        "api_key_fingerprint": "b4aa300a850421dd883a1cc2333fac5ca5922e4246aca6ba932058e6585de569",
+        "algorithm": "Ed25519"
+      },
+      "tests_passing": 142,
+      "trace_middleware": true,
+      "x_trace_id_header": true
+    },
+    "sovereign": {
+      "owner": "Aakanksha",
+      "system": "Sovereign",
+      "role": "Decision Authority",
+      "status": "BLOCKED",
+      "repo": "UNKNOWN",
+      "endpoint": null,
+      "note": "No URL received. Core has internal fallback."
+    },
+    "cet": {
+      "owner": "Tanvi",
+      "system": "CET (Contract Engine)",
+      "role": "Contract Compilation",
+      "status": "BLOCKED",
+      "repo": "UNKNOWN",
+      "endpoint": null,
+      "note": "No URL received. Core generates internal contract hash as fallback."
+    },
+    "sarathi": {
+      "owner": "Rajaryan",
+      "system": "Sarathi",
+      "role": "Enforcement + Token Issuance",
+      "status": "PARTIAL",
+      "repo": "UNKNOWN",
+      "endpoint": null,
+      "note": "ngrok URL exists per user. Core schema aligned byte-for-byte with Sarathi. Ed25519 key registered.",
+      "alignment": {
+        "schema_verified": true,
+        "decision_hash_match": "eb1a0d58f2a624ebde3a6adc21f9ffb2c19b8f654ccb94eea251a144d517ffbe",
+        "decision_id_match": "f5816bed-aeee-7d9f-f397-0074cdbb0687",
+        "signing_bytes_match": true,
+        "sarathi_public_key": "6b221afce4c4c6f42b0ea71136ee2356c5d70efb9cea59831956f300c9286628"
+      }
+    },
+    "bridge": {
+      "owner": "Ranjit",
+      "system": "Gated Bridge",
+      "role": "Execution Validation Gate",
+      "status": "PARTIAL",
+      "repo": "UNKNOWN",
+      "endpoint": null,
+      "note": "URL exists per user but not shared."
+    },
+    "bucket": {
+      "owner": "Siddhesh",
+      "system": "Bucket (Truth Store)",
+      "role": "Append-only Truth Writer",
+      "status": "PARTIAL",
+      "repo": "UNKNOWN",
+      "endpoint": null,
+      "note": "Render URL exists per user but not shared."
+    },
+    "insightflow": {
+      "owner": "Vijay",
+      "system": "InsightFlow",
+      "role": "Telemetry + Trace Observability",
+      "status": "BLOCKED",
+      "repo": "UNKNOWN",
+      "endpoint": null,
+      "note": "No URL received. Core has local JSONL fallback."
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "version": "1.0",
+  "environment": "staging",
+  "updated_at": "2026-06-15T08:30:00Z",
+  "mode": {
+    "USE_EXTERNAL_AUTHORITY": false,
+    "USE_FULL_TANTRA": false
+  },
+  "endpoints": {
+    "sovereign": {
+      "url": "http://localhost:9001",
+      "path": "/sovereign/decide",
+      "method": "POST",
+      "status": "BLOCKED",
+      "owner": "Aakanksha"
+    },
+    "cet": {
+      "url": "http://localhost:9004",
+      "path": "/cet/compile",
+      "method": "POST",
+      "status": "BLOCKED",
+      "owner": "Tanvi"
+    },
+    "sarathi": {
+      "url": "http://localhost:9002",
+      "path": "/sarathi/enforce",
+      "method": "POST",
+      "status": "PARTIAL",
+      "owner": "Rajaryan",
+      "note": "ngrok URL exists but not shared"
+    },
+    "bridge": {
+      "url": "http://localhost:9005",
+      "path": "/bridge/validate",
+      "method": "POST",
+      "status": "PARTIAL",
+      "owner": "Ranjit",
+      "note": "URL exists but not shared"
+    },
+    "bucket": {
+      "url": "http://localhost:9003",
+      "path": "/bucket/append",
+      "method": "POST",
+      "status": "PARTIAL",
+      "owner": "Siddhesh",
+      "note": "Render URL exists but not shared"
+    },
+    "insightflow": {
+      "url": "http://localhost:9006",
+      "path": "/insightflow/trace",
+      "method": "POST",
+      "status": "BLOCKED",
+      "owner": "Vijay"
+    }
+  },
+  "headers": {
+    "Content-Type": "application/json",
+    "X-Trace-Id": "<propagated per-request>"
+  },
+  "auth": {
+    "api_key_header": "X-API-Key",
+    "evaluator_id": "bhiv.sovereign.decision.prod.v1",
+    "schema_version": "tantra.decision.v1",
+    "algorithm": "Ed25519"
+  }
+}
