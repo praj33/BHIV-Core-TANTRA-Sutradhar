@@ -30,14 +30,16 @@ def callBridge(
     trace_id: str,
     execution_token: str,
     contract_hash: str = "",
+    execution_id: str = "",
 ) -> Dict[str, Any]:
     """
     Call Gated Bridge for execution validation.
 
     Args:
         trace_id: Core-generated trace_id
-        execution_token: Token from Sarathi
+        execution_token: JWT token from Sarathi
         contract_hash: Hash from CET (forwarded unchanged)
+        execution_id: Execution ID from Sarathi enforcement
 
     Returns:
         Bridge response: {status: "VALIDATED"/"REJECTED", ...}
@@ -50,6 +52,7 @@ def callBridge(
         "trace_id": trace_id,
         "execution_token": execution_token,
         "contract_hash": contract_hash,
+        "execution_id": execution_id or trace_id,
         "timestamp": get_normalized_timestamp(),
     }
 
@@ -60,10 +63,13 @@ def callBridge(
         data = json.dumps(payload).encode("utf-8")
         headers = get_trace_headers(trace_id)
         headers["ngrok-skip-browser-warning"] = "true"
-        # Ranjit requires: Authorization: Bearer <JWT_TOKEN>
-        # Token comes from Sarathi (trusted issuer for Bridge)
+        # Ranjit requires: Authorization: Bearer <JWT> from Sarathi
         if execution_token:
             headers["Authorization"] = f"Bearer {execution_token}"
+        # Bridge enforces continuity between JWT claims, body, and these headers
+        headers["X-Sarathi-Execution-Id"] = execution_id or trace_id
+        headers["X-Sarathi-Trace-Id"] = trace_id
+        headers["X-Sarathi-Cet-Hash"] = contract_hash
         req = urllib.request.Request(
             url, data=data,
             headers=headers,

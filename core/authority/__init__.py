@@ -211,6 +211,8 @@ def _callSarathi_external(
             "signature_hash": signature_hash,
         },
         "pipeline_execution_id": execution_id,
+        "trace_id": trace_ctx.trace_id,
+        "cet_hash": execution_payload.get("cet_hash", "") if execution_payload else "",
     }
 
     logger.info(f"Calling external Sarathi: trace_id={trace_ctx.trace_id}")
@@ -219,8 +221,9 @@ def _callSarathi_external(
     response = _http_post(url, payload)
 
     status = response.get("status", "BLOCKED")
+    sarathi_jwt = response.get("jwt", "")  # Sarathi now returns signed JWT
 
-    if status == "CLEARED":
+    if status in ("CLEARED", "ALLOW"):
         enforcement_signal = TraceSignal(
             layer="sarathi",
             signal_type="enforcement",
@@ -229,7 +232,8 @@ def _callSarathi_external(
                 "enforcement_status": "CLEARED",
                 "validation_result": response.get("validation_result", "External Sarathi cleared"),
                 "failure_reason": None,
-                "execution_token": response.get("execution_token", ""),
+                "execution_token": sarathi_jwt or response.get("execution_token", ""),
+                "execution_id": execution_id,
             },
         )
         return trace_ctx.add_signal(enforcement_signal)
