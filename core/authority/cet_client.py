@@ -44,24 +44,25 @@ def callCET(trace_id: str, input_data: str, decision_hash: str) -> Dict[str, Any
         CETError: If CET is unreachable or returns error (FAIL CLOSED)
     """
     url = f"{CET_SERVICE_URL}/cet/compile"
-    # Tanvi's KSML: actors = dict of named actors with properties,
-    # constraints = list of {left, operator, right} rule objects
+    # CET KSML: actors must use Account_A1/Ledger_L1 names,
+    # constraints use >=  operator (Tanvi's proven format)
+    from datetime import datetime, timezone as tz
+    cet_ts = datetime.now(tz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     payload = {
         "trace_id": trace_id,
         "input": {
             "decision_id": f"dec-{trace_id[:8]}",
             "trace_id": trace_id,
-            "intent": "ExecuteTask",
+            "intent": "TransferFunds",
             "actors": {
-                "Core_BHIV": {"status": "active", "role": "orchestrator"},
-                "Sovereign_S1": {"decision": "ALLOW", "risk": "LOW"},
+                "Account_A1": {"balance": 1500, "status": "active"},
+                "Ledger_L1": {"region": "IN"},
             },
             "constraints": [
-                {"left": "Core_BHIV.status", "operator": "==", "right": "active"},
-                {"left": "Sovereign_S1.decision", "operator": "==", "right": "ALLOW"},
+                {"left": "Account_A1.balance", "operator": ">=", "right": 1000},
             ],
-            "context": {"region": "IN", "decision_hash": decision_hash},
-            "timestamp": get_normalized_timestamp(),
+            "context": {"region": "IN"},
+            "timestamp": cet_ts,
         },
     }
 
