@@ -78,13 +78,38 @@ def emitTrace(
 
 
 def _emit_external(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Emit to external InsightFlow service."""
-    url = f"{INSIGHTFLOW_SERVICE_URL}/insightflow/trace"
-    data = json.dumps(payload, default=str).encode("utf-8")
+    """Emit to external InsightFlow (Vijay's Data Universe Registry).
+
+    Maps trace data to dataset registration format:
+      POST /api/v1/datasets/
+    Schema: canonical_id (BHIV-DS-TANTRA-TRACE-XXX), dataset_name,
+            owner_name, owner_team, domain_primary, source_system
+    """
+    url = f"{INSIGHTFLOW_SERVICE_URL}/api/v1/datasets/"
+    trace_id = payload.get("trace_id", "unknown")
+    short_id = trace_id[:8].replace("-", "").upper()
+
+    # Map trace payload to Vijay's dataset registration schema
+    dataset_payload = {
+        "canonical_id": f"BHIV-DS-TANTRA-TRACE-{short_id}",
+        "dataset_name": f"TANTRA Trace {trace_id[:8]}",
+        "description": (
+            f"Execution trace from BHIV Core. "
+            f"Status: {payload.get('execution_status', 'unknown')}. "
+            f"Chain length: {payload.get('chain_length', 0)}."
+        ),
+        "owner_name": "Raj Prajapati",
+        "owner_team": "bhiv-core",
+        "domain_primary": "tantra",
+        "source_system": "bhiv-core-v1",
+        "tags": ["tantra", "trace", "execution", payload.get("execution_status", "unknown")],
+        "metadata": payload,
+    }
+
+    data = json.dumps(dataset_payload, default=str).encode("utf-8")
     from core.trace.middleware import get_trace_headers
-    headers = get_trace_headers(payload.get("trace_id"))
+    headers = get_trace_headers(trace_id)
     headers["ngrok-skip-browser-warning"] = "true"
-    # InsightFlow requires X-API-Key
     api_key = os.environ.get("INSIGHTFLOW_API_KEY", "")
     if api_key:
         headers["X-API-Key"] = api_key
@@ -96,8 +121,8 @@ def _emit_external(payload: Dict[str, Any]) -> Dict[str, Any]:
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
             response = json.loads(resp.read().decode("utf-8"))
-            logger.info(f"InsightFlow trace emitted (external): trace_id={payload['trace_id']}")
-            return {"status": "emitted", "store": "external", "trace_id": payload["trace_id"]}
+            logger.info(f"InsightFlow trace emitted (external): trace_id={trace_id}")
+            return {"status": "emitted", "store": "external", "trace_id": trace_id}
     except urllib.error.URLError as e:
         raise ConnectionError(f"InsightFlow unreachable: {e}")
 
