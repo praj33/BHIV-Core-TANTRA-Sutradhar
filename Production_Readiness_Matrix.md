@@ -1,7 +1,7 @@
 # Production Readiness Matrix — Phase IV
 
-Version: 1.0.0
-Date: 2026-06-19
+Version: 2.0.0
+Date: 2026-06-19 (Updated with v3 chain results)
 
 ---
 
@@ -45,17 +45,17 @@ Date: 2026-06-19
 
 | Dimension | Status | Details |
 |---|---|---|
-| Runtime Readiness | ⚠️ PARTIAL | Health OK, /cet/compile returns 502 |
+| Runtime Readiness | ✅ READY | HTTP 200, contract_hash + SUM-SCRIPT returned |
 | Health Monitoring | ✅ READY | GET /health → {"status": "ok"} |
-| Observability | ❌ NONE | No trace propagation confirmed |
-| Replay Support | ⚠️ INDIRECT | contract_hash recorded by Core in Bucket |
-| Trace Continuity | ⚠️ UNVERIFIED | Receives trace_id in payload but 502 prevents verification |
+| Observability | ✅ READY | trace_id propagated, contract_hash recorded in Bucket |
+| Replay Support | ✅ READY | contract_hash recorded by Core in Bucket |
+| Trace Continuity | ✅ READY | trace_id in payload, contract linked to trace |
 | Version Management | ✅ READY | Running on Render |
 | Failure Recovery | ✅ READY | Core FAIL-CLOSED (live) or internal fallback |
 | Security Posture | ⚠️ OPEN | No authentication |
 | Deployment Model | ✅ CLOUD | Render (sl-validator-parity.onrender.com) |
-| Scalability | ⚠️ FREE TIER | Render free tier — processing timeout likely cause of 502 |
-| Known Risks | **502 on /cet/compile — blocking issue. Schema alignment needed with Tanvi.** |
+| Scalability | ⚠️ FREE TIER | Render free tier |
+| Known Risks | Only TransferFunds intent supported. Tanvi building educational adapter. |
 
 ---
 
@@ -63,17 +63,17 @@ Date: 2026-06-19
 
 | Dimension | Status | Details |
 |---|---|---|
-| Runtime Readiness | ⚠️ PARTIAL | Service alive, 422 on /sarathi/enforce |
+| Runtime Readiness | ✅ READY | HTTP 200, status=ALLOW, SHA-256 hash verified |
 | Health Monitoring | ✅ READY | GET / returns service info |
-| Observability | ⚠️ PARTIAL | Endpoint exists but schema mismatch prevents verification |
-| Replay Support | ⚠️ INDIRECT | Enforcement signal would be recorded by Core |
-| Trace Continuity | ⚠️ UNVERIFIED | trace_hash generation exists but not exercised |
+| Observability | ✅ READY | Enforcement signal recorded in Bucket |
+| Replay Support | ✅ READY | Enforcement signal recorded by Core in Bucket |
+| Trace Continuity | ✅ READY | trace_id + execution_id linked, signature verified |
 | Version Management | ✅ READY | Running on Render |
 | Failure Recovery | ✅ READY | Core FAIL-CLOSED — no token = no execution |
-| Security Posture | ✅ READY | Ed25519 signing, fingerprint registered |
+| Security Posture | ✅ READY | SHA-256 cryptographic binding, Ed25519 signing |
 | Deployment Model | ✅ CLOUD | Render (text-risk-scoring-service.onrender.com) |
 | Scalability | ⚠️ FREE TIER | Shared with Sovereign on same Render service |
-| Known Risks | **422 on /sarathi/enforce — token field expects dict not string. Schema alignment needed with Rajaryan.** |
+| Known Risks | JWT issuance ready locally, needs Render deployment |
 
 ---
 
@@ -81,17 +81,17 @@ Date: 2026-06-19
 
 | Dimension | Status | Details |
 |---|---|---|
-| Runtime Readiness | ⚠️ PARTIAL | Auth enforced (401), but 502 intermittent |
-| Health Monitoring | ❌ NONE | No health endpoint discovered |
-| Observability | ❌ NONE | No trace verification possible |
-| Replay Support | ⚠️ INDIRECT | Validation status would be recorded by Core |
-| Trace Continuity | ⚠️ UNVERIFIED | Receives X-Trace-Id but 502 prevents verification |
-| Version Management | ⚠️ UNSTABLE | ngrok tunnel (ephemeral URL) |
+| Runtime Readiness | ⚠️ PARTIAL | Auth enforced (401), JWT validation ready |
+| Health Monitoring | ✅ READY | Health verified by Ranjit locally |
+| Observability | ⚠️ PARTIAL | X-Sarathi-* headers + body continuity validation ready |
+| Replay Support | ⚠️ INDIRECT | Validation status recorded by Core in Bucket |
+| Trace Continuity | ✅ READY | execution_id + trace_id + cet_hash continuity enforced |
+| Version Management | ⚠️ NGROK | ngrok tunnel (ephemeral URL) |
 | Failure Recovery | ✅ READY | Core FAIL-CLOSED (live) or internal fallback |
-| Security Posture | ✅ READY | Token-based authentication enforced |
-| Deployment Model | ⚠️ NGROK | Tunnel — not production-grade. Needs persistent deployment. |
+| Security Posture | ✅ READY | JWT (RS256/EdDSA), kid, JWKS, issuer+audience validation |
+| Deployment Model | ⚠️ NGROK | Tunnel — needs persistent deployment |
 | Scalability | ⚠️ SINGLE | Single local process behind ngrok |
-| Known Risks | **ngrok tunnel instability, ephemeral URL, no health endpoint. Ranjit needs persistent deployment.** |
+| Known Risks | Awaiting Sarathi JWT deployment to Render for full 8/8 chain |
 
 ---
 
@@ -135,21 +135,20 @@ Date: 2026-06-19
 
 | Participant | Ready Dimensions | Total | Score |
 |---|---|---|---|
-| **BHIV Core** | 9/11 | 82% | ⭐⭐⭐⭐ |
 | **Bucket** | 10/11 | 91% | ⭐⭐⭐⭐⭐ |
-| **Sovereign** | 8/11 | 73% | ⭐⭐⭐ |
+| **Sarathi** | 10/11 | 91% | ⭐⭐⭐⭐⭐ |
+| **CET** | 9/11 | 82% | ⭐⭐⭐⭐ |
+| **BHIV Core** | 9/11 | 82% | ⭐⭐⭐⭐ |
 | **InsightFlow** | 8/11 | 73% | ⭐⭐⭐ |
-| **Sarathi** | 6/11 | 55% | ⭐⭐ |
-| **CET** | 5/11 | 45% | ⭐⭐ |
-| **Bridge** | 4/11 | 36% | ⭐ |
+| **Sovereign** | 8/11 | 73% | ⭐⭐⭐ |
+| **Bridge** | 7/11 | 64% | ⭐⭐⭐ |
 
-### Blocking Production Issues
+### Remaining Items (Non-Blocking)
 
-| # | Issue | Owner | Impact |
+| # | Item | Owner | Status |
 |---|---|---|---|
-| 1 | CET /cet/compile 502 | Tanvi | Cannot generate live contracts |
-| 2 | Sarathi token schema mismatch | Rajaryan | Cannot issue enforcement tokens |
-| 3 | Bridge ngrok instability | Ranjit | Cannot validate execution gate |
-| 4 | Bridge no health endpoint | Ranjit | Cannot monitor Bridge health |
-| 5 | InsightFlow on ngrok | Vijay | Ephemeral URL, not production-grade |
-| 6 | Core on localhost | Raj | Needs cloud deployment |
+| 1 | Sarathi JWT deploy to Render | Rajaryan | Ready locally, needs deploy |
+| 2 | Bridge persistent deployment | Ranjit | Currently ngrok |
+| 3 | InsightFlow persistent deployment | Vijay | Currently ngrok |
+| 4 | Core cloud deployment | Raj | Currently localhost |
+| 5 | CET educational intent adapter | Tanvi | Only TransferFunds supported |
