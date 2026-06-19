@@ -45,7 +45,7 @@ def callBridge(
     Raises:
         BridgeError: If Bridge rejects or is unreachable (FAIL CLOSED)
     """
-    url = f"{BRIDGE_SERVICE_URL}/bridge/validate"
+    url = f"{BRIDGE_SERVICE_URL}/execute"
     payload = {
         "trace_id": trace_id,
         "execution_token": execution_token,
@@ -58,9 +58,11 @@ def callBridge(
     try:
         from core.trace.middleware import get_trace_headers
         data = json.dumps(payload).encode("utf-8")
+        headers = get_trace_headers(trace_id)
+        headers["ngrok-skip-browser-warning"] = "true"
         req = urllib.request.Request(
             url, data=data,
-            headers=get_trace_headers(trace_id),
+            headers=headers,
             method="POST",
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
