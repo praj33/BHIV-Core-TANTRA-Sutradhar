@@ -82,13 +82,19 @@ def _emit_external(payload: Dict[str, Any]) -> Dict[str, Any]:
     url = f"{INSIGHTFLOW_SERVICE_URL}/insightflow/trace"
     data = json.dumps(payload, default=str).encode("utf-8")
     from core.trace.middleware import get_trace_headers
+    headers = get_trace_headers(payload.get("trace_id"))
+    headers["ngrok-skip-browser-warning"] = "true"
+    # InsightFlow requires X-API-Key
+    api_key = os.environ.get("INSIGHTFLOW_API_KEY", "")
+    if api_key:
+        headers["X-API-Key"] = api_key
     req = urllib.request.Request(
         url, data=data,
-        headers=get_trace_headers(payload.get("trace_id")),
+        headers=headers,
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=15) as resp:
             response = json.loads(resp.read().decode("utf-8"))
             logger.info(f"InsightFlow trace emitted (external): trace_id={payload['trace_id']}")
             return {"status": "emitted", "store": "external", "trace_id": payload["trace_id"]}
