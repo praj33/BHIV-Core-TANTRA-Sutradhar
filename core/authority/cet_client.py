@@ -44,24 +44,25 @@ def callCET(trace_id: str, input_data: str, decision_hash: str) -> Dict[str, Any
         CETError: If CET is unreachable or returns error (FAIL CLOSED)
     """
     url = f"{CET_SERVICE_URL}/cet/compile"
-    # Tanvi's KSML schema: input must contain exactly these 7 keys in canonical order
+    # Tanvi's KSML: actors = dict of named actors with properties,
+    # constraints = list of {left, operator, right} rule objects
     payload = {
         "trace_id": trace_id,
         "input": {
             "decision_id": f"dec-{trace_id[:8]}",
             "trace_id": trace_id,
-            "intent": input_data,
-            "actors": ["bhiv-core", "sovereign"],
-            "constraints": ["fail-closed", "append-only"],
-            "context": {
-                "source": "bhiv-core",
-                "type": "execution_request",
-                "decision_hash": decision_hash,
+            "intent": "ExecuteTask",
+            "actors": {
+                "Core_BHIV": {"status": "active", "role": "orchestrator"},
+                "Sovereign_S1": {"decision": "ALLOW", "risk": "LOW"},
             },
+            "constraints": [
+                {"left": "Core_BHIV.status", "operator": "==", "right": "active"},
+                {"left": "Sovereign_S1.decision", "operator": "==", "right": "ALLOW"},
+            ],
+            "context": {"region": "IN", "decision_hash": decision_hash},
             "timestamp": get_normalized_timestamp(),
         },
-        "decision_hash": decision_hash,
-        "timestamp": get_normalized_timestamp(),
     }
 
     logger.info(f"Calling CET: trace_id={trace_id}")
