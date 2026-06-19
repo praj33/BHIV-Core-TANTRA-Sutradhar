@@ -44,13 +44,21 @@ def callCET(trace_id: str, input_data: str, decision_hash: str) -> Dict[str, Any
         CETError: If CET is unreachable or returns error (FAIL CLOSED)
     """
     url = f"{CET_SERVICE_URL}/cet/compile"
-    # Tanvi requires 'input' as a dict/object, not a plain string
+    # Tanvi's KSML schema: input must contain exactly these 7 keys in canonical order
     payload = {
         "trace_id": trace_id,
         "input": {
-            "text": input_data,
-            "source": "bhiv-core",
-            "type": "execution_request",
+            "decision_id": f"dec-{trace_id[:8]}",
+            "trace_id": trace_id,
+            "intent": input_data,
+            "actors": ["bhiv-core", "sovereign"],
+            "constraints": ["fail-closed", "append-only"],
+            "context": {
+                "source": "bhiv-core",
+                "type": "execution_request",
+                "decision_hash": decision_hash,
+            },
+            "timestamp": get_normalized_timestamp(),
         },
         "decision_hash": decision_hash,
         "timestamp": get_normalized_timestamp(),

@@ -60,6 +60,10 @@ def callBridge(
         data = json.dumps(payload).encode("utf-8")
         headers = get_trace_headers(trace_id)
         headers["ngrok-skip-browser-warning"] = "true"
+        # Ranjit requires: Authorization: Bearer <JWT_TOKEN>
+        # Token comes from Sarathi (trusted issuer for Bridge)
+        if execution_token:
+            headers["Authorization"] = f"Bearer {execution_token}"
         req = urllib.request.Request(
             url, data=data,
             headers=headers,
