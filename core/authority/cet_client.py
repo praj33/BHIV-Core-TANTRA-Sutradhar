@@ -44,9 +44,14 @@ def callCET(trace_id: str, input_data: str, decision_hash: str) -> Dict[str, Any
         CETError: If CET is unreachable or returns error (FAIL CLOSED)
     """
     url = f"{CET_SERVICE_URL}/cet/compile"
+    # Tanvi requires 'input' as a dict/object, not a plain string
     payload = {
         "trace_id": trace_id,
-        "input": input_data,
+        "input": {
+            "text": input_data,
+            "source": "bhiv-core",
+            "type": "execution_request",
+        },
         "decision_hash": decision_hash,
         "timestamp": get_normalized_timestamp(),
     }

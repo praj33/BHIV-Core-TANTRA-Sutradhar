@@ -194,11 +194,16 @@ def _callSarathi_external(
 
     decision_hash = decision_signal.payload.get("decision_hash", "")
 
+    # Rajaryan's SarathiTokenInput schema: token must be a dict
     payload = {
-        "trace_id": trace_ctx.trace_id,
-        "decision": decision_signal.payload.get("decision"),
-        "execution_payload": execution_payload or {},
-        "decision_hash": decision_hash,
+        "token": {
+            "execution_id": trace_ctx.trace_id,
+            "rajya_verdict": decision_signal.payload.get("decision", "ALLOW"),
+            "token_status": "ACTIVE",
+            "timestamp": get_normalized_timestamp(),
+            "signature_hash": decision_hash,
+        },
+        "pipeline_execution_id": trace_ctx.trace_id,
     }
 
     logger.info(f"Calling external Sarathi: trace_id={trace_ctx.trace_id}")
