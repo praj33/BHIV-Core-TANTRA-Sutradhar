@@ -124,3 +124,65 @@ User Request
 | Bridge unreachable | Chain BLOCKED at Step 5 | FAIL-CLOSED |
 | Bucket unreachable | Chain BLOCKED at Step 7 | FAIL-CLOSED (BucketWriteError) |
 | InsightFlow unreachable | Chain CONTINUES | GRACEFUL-FALLBACK (local JSONL) |
+
+---
+
+## Dependency Classification
+
+| Participant | Type | Blocking? | Fallback? |
+|---|---|---|---|
+| Sovereign | CRITICAL | YES | No — FAIL-CLOSED |
+| CET | CRITICAL | YES | YES — internal fallback hash |
+| Sarathi | CRITICAL | YES | No — FAIL-CLOSED |
+| Bridge | CRITICAL | YES | No — FAIL-CLOSED |
+| Bucket | CRITICAL | YES | No — FAIL-CLOSED |
+| InsightFlow | OPTIONAL | NO | YES — local JSONL |
+
+---
+
+## Service Startup Order
+
+Services must be available in this order before Core can execute the full chain:
+
+| Order | Service | Reason |
+|---|---|---|
+| 1 | Bucket | Truth store must be available for chain-state fetch |
+| 2 | Sovereign | Risk assessment must be reachable |
+| 3 | CET | Contract compilation must be reachable |
+| 4 | Sarathi | Enforcement + JWT issuance must be reachable |
+| 5 | Bridge | JWT validation gate must be reachable |
+| 6 | InsightFlow | Optional — Core starts without it (GRACEFUL-FALLBACK) |
+| 7 | **BHIV Core** | Starts last — all dependencies verified via health checks |
+
+---
+
+## Safe Shutdown Order
+
+Services should be shut down in reverse dependency order:
+
+| Order | Service | Pre-shutdown Action |
+|---|---|---|
+| 1 | **BHIV Core** | Stop accepting new requests, drain in-flight executions |
+| 2 | InsightFlow | Flush pending dataset registrations |
+| 3 | Bridge | Drain pending JWT validations |
+| 4 | Sarathi | Drain pending enforcement requests |
+| 5 | CET | No state — safe to stop immediately |
+| 6 | Sovereign | No state — safe to stop immediately |
+| 7 | Bucket | Verify all pending writes committed, flush hash chain |
+
+---
+
+## Replay Reconstruction Order
+
+To reconstruct a trace from evidence:
+
+| Order | Source | Data Retrieved |
+|---|---|---|
+| 1 | Bucket | Primary truth — artifact payload, hash chain, timestamps |
+| 2 | InsightFlow | Secondary — dataset metadata, canonical_id |
+| 3 | Core local logs | Tertiary — JSONL fallback, trace_origin details |
+| 4 | Sovereign | Verify — re-run risk assessment for comparison |
+| 5 | CET | Verify — re-compile contract for hash comparison |
+
+Replay command: `GET /trace/{trace_id}` on Core reconstructs from all sources.
+

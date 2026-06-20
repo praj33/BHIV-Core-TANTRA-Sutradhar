@@ -173,16 +173,193 @@ The product never directly interacts with Sovereign, CET, Sarathi, Bridge, Bucke
 
 ---
 
+## Future Product Attachment Specifications
+
+### UniGuru
+
+| Field | Value |
+|---|---|
+| **Product** | UniGuru |
+| **Purpose** | University admission guidance and counseling |
+| **Trigger** | User submits admission query |
+| **Execution Path** | Core → Sovereign (risk check) → CET (admission contract) → Agent (process query) |
+| **Trace Path** | trace_id propagated, query + response recorded |
+| **Replay Path** | Full query-response chain reconstructable from Bucket |
+| **Observability Path** | InsightFlow dataset per session |
+| **Truth Persistence** | Bucket: query, response, decision hash |
+| **Governance Dependencies** | Sovereign (content risk), Sarathi (auth) |
+| **Runtime Health** | Agent health check, timeout 30s |
+| **Recovery Behaviour** | FAIL-CLOSED on governance, retry on agent timeout |
+| **Version Compatibility** | Core ≥ 1.0.0 |
+
+### HackaVerse
+
+| Field | Value |
+|---|---|
+| **Product** | HackaVerse |
+| **Purpose** | Hackathon management and evaluation platform |
+| **Trigger** | Submission evaluation request |
+| **Execution Path** | Core → Sovereign (content check) → CET (evaluation contract) → Agent (evaluate) |
+| **Trace Path** | trace_id per submission evaluation |
+| **Replay Path** | Full evaluation chain from Bucket |
+| **Observability Path** | InsightFlow dataset per hackathon event |
+| **Truth Persistence** | Bucket: submission, scores, evaluation criteria |
+| **Governance Dependencies** | Sovereign (fair evaluation), Sarathi (auth) |
+| **Runtime Health** | Agent health, batch processing support |
+| **Recovery Behaviour** | FAIL-CLOSED on governance, queue on agent overload |
+| **Version Compatibility** | Core ≥ 1.0.0 |
+
+### SETU
+
+| Field | Value |
+|---|---|
+| **Product** | SETU |
+| **Purpose** | Cross-system bridge and data integration layer |
+| **Trigger** | Integration request from external system |
+| **Execution Path** | Core → Sovereign (data risk) → CET (integration contract) → Agent (transform + route) |
+| **Trace Path** | trace_id spans source and destination systems |
+| **Replay Path** | Full transformation chain from Bucket |
+| **Observability Path** | InsightFlow: integration metrics, data flow telemetry |
+| **Truth Persistence** | Bucket: source data hash, transformation log, destination confirmation |
+| **Governance Dependencies** | Sovereign (data classification), Sarathi (cross-system auth), Bridge (destination validation) |
+| **Runtime Health** | Connectivity checks to source/destination |
+| **Recovery Behaviour** | FAIL-CLOSED on auth, retry on connectivity |
+| **Version Compatibility** | Core ≥ 1.0.0 |
+
+### SUMSCRIPT
+
+| Field | Value |
+|---|---|
+| **Product** | SUMSCRIPT |
+| **Purpose** | Smart contract execution and validation engine |
+| **Trigger** | Contract execution request |
+| **Execution Path** | Core → Sovereign (contract risk) → CET (compile SUMSCRIPT) → Agent (execute contract) |
+| **Trace Path** | trace_id per contract execution |
+| **Replay Path** | Full contract execution chain from Bucket (deterministic replay) |
+| **Observability Path** | InsightFlow: contract metrics, execution telemetry |
+| **Truth Persistence** | Bucket: compiled contract, execution log, state transitions |
+| **Governance Dependencies** | Sovereign (risk), CET (compilation), Sarathi (enforcement) |
+| **Runtime Health** | Contract engine health, state consistency checks |
+| **Recovery Behaviour** | FAIL-CLOSED (contract execution must be atomic) |
+| **Version Compatibility** | Core ≥ 1.0.0, CET contract format required |
+
+### ERP
+
+| Field | Value |
+|---|---|
+| **Product** | ERP (Enterprise Resource Planning) |
+| **Purpose** | Enterprise business process automation |
+| **Trigger** | Business process request (invoice, procurement, HR) |
+| **Execution Path** | Core → Sovereign (business rule check) → CET (process contract) → Agent (process) |
+| **Trace Path** | trace_id per business transaction |
+| **Replay Path** | Full transaction audit trail from Bucket |
+| **Observability Path** | InsightFlow: business metrics, process telemetry |
+| **Truth Persistence** | Bucket: transaction record, approval chain, outcome |
+| **Governance Dependencies** | Sovereign (compliance), Sarathi (authorization), Bridge (multi-party validation) |
+| **Runtime Health** | Process engine health, database connectivity |
+| **Recovery Behaviour** | FAIL-CLOSED on financial transactions, retry on non-critical |
+| **Version Compatibility** | Core ≥ 1.0.0 |
+
+### Fraud Detection
+
+| Field | Value |
+|---|---|
+| **Product** | Fraud Detection |
+| **Purpose** | Real-time fraud detection and prevention |
+| **Trigger** | Transaction or activity flagged for analysis |
+| **Execution Path** | Core → Sovereign (risk scoring) → CET (detection rules contract) → Agent (analyze patterns) |
+| **Trace Path** | trace_id per detection event |
+| **Replay Path** | Full detection chain from Bucket (forensic replay) |
+| **Observability Path** | InsightFlow: detection rates, false positive metrics |
+| **Truth Persistence** | Bucket: flagged activity, detection result, evidence hash |
+| **Governance Dependencies** | Sovereign (risk threshold), Sarathi (enforcement action) |
+| **Runtime Health** | Model inference health, latency < 500ms required |
+| **Recovery Behaviour** | FAIL-CLOSED (suspected fraud must block transaction) |
+| **Version Compatibility** | Core ≥ 1.0.0 |
+
+### AI Video
+
+| Field | Value |
+|---|---|
+| **Product** | AI Video |
+| **Purpose** | AI-powered video generation and analysis |
+| **Trigger** | Video generation or analysis request |
+| **Execution Path** | Core → Sovereign (content moderation) → CET (usage contract) → Agent (generate/analyze) |
+| **Trace Path** | trace_id per video operation |
+| **Replay Path** | Metadata replay from Bucket (video artifacts stored separately) |
+| **Observability Path** | InsightFlow: generation metrics, content moderation stats |
+| **Truth Persistence** | Bucket: operation metadata, content hash, moderation result |
+| **Governance Dependencies** | Sovereign (content moderation critical), Sarathi (usage authorization) |
+| **Runtime Health** | GPU availability, model loading status |
+| **Recovery Behaviour** | FAIL-CLOSED on content moderation, retry on generation timeout |
+| **Version Compatibility** | Core ≥ 1.0.0 |
+
+### Future Robotics
+
+| Field | Value |
+|---|---|
+| **Product** | Future Robotics |
+| **Purpose** | Robot command execution and telemetry |
+| **Trigger** | Robot command request |
+| **Execution Path** | Core → Sovereign (safety check) → CET (motion contract) → Agent (command execution) |
+| **Trace Path** | trace_id per command chain |
+| **Replay Path** | Full command chain replay from Bucket (safety audit) |
+| **Observability Path** | InsightFlow: telemetry streams, safety metrics |
+| **Truth Persistence** | Bucket: command, sensor data hash, outcome |
+| **Governance Dependencies** | Sovereign (safety critical), Sarathi (auth), Bridge (real-time validation) |
+| **Runtime Health** | Robot connectivity, sensor status, emergency stop capability |
+| **Recovery Behaviour** | FAIL-CLOSED (safety-first — any governance failure = emergency stop) |
+| **Version Compatibility** | Core ≥ 1.0.0, real-time extension required |
+
+### Future XR
+
+| Field | Value |
+|---|---|
+| **Product** | Future XR (Extended Reality) |
+| **Purpose** | AR/VR/MR experience management |
+| **Trigger** | XR session request or interaction event |
+| **Execution Path** | Core → Sovereign (content check) → CET (experience contract) → Agent (render/process) |
+| **Trace Path** | trace_id per session |
+| **Replay Path** | Session metadata replay from Bucket |
+| **Observability Path** | InsightFlow: session metrics, interaction telemetry |
+| **Truth Persistence** | Bucket: session metadata, interaction log hash |
+| **Governance Dependencies** | Sovereign (content moderation), Sarathi (session auth) |
+| **Runtime Health** | Rendering engine status, latency requirements |
+| **Recovery Behaviour** | GRACEFUL-FALLBACK (degrade experience rather than crash) |
+| **Version Compatibility** | Core ≥ 1.0.0 |
+
+### Future Blockchain
+
+| Field | Value |
+|---|---|
+| **Product** | Future Blockchain |
+| **Purpose** | Blockchain transaction management and smart contract bridge |
+| **Trigger** | Blockchain transaction or smart contract call |
+| **Execution Path** | Core → Sovereign (transaction risk) → CET (on-chain contract) → Agent (submit to chain) |
+| **Trace Path** | trace_id linked to on-chain transaction hash |
+| **Replay Path** | Full transaction chain from Bucket + on-chain verification |
+| **Observability Path** | InsightFlow: transaction metrics, gas costs, confirmation times |
+| **Truth Persistence** | Bucket: transaction metadata, block confirmation, state proof |
+| **Governance Dependencies** | Sovereign (AML/KYC check), Sarathi (signing authorization), Bridge (multi-sig validation) |
+| **Runtime Health** | Node connectivity, chain sync status, gas price monitoring |
+| **Recovery Behaviour** | FAIL-CLOSED (blockchain transactions are irreversible) |
+| **Version Compatibility** | Core ≥ 1.0.0, chain-specific adapter required |
+
+---
+
 ## Attachment Checklist
 
 For any new product:
 
 - [ ] Agent class created in `agents/`
 - [ ] Agent config added to `agent_configs.json`
+- [ ] Entry added to `TANTRA_INTEGRATION_REGISTRY.json`
 - [ ] Input schema documented
 - [ ] Timeout configured
 - [ ] Error handling implemented
+- [ ] Failure mode declared (FAIL-CLOSED or GRACEFUL-FALLBACK)
 - [ ] Test execution completed
 - [ ] 8-step chain verified with product agent
 - [ ] Bucket audit confirmed
 - [ ] InsightFlow dataset registered
+- [ ] Version compatibility verified
