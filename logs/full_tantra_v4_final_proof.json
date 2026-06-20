@@ -1,0 +1,83 @@
+{
+  "steps": [
+    {
+      "step": "1. Trace Origin",
+      "status": "SUCCESS",
+      "ts": "2026-06-20T08:23:53.942662+00:00",
+      "data": {
+        "trace_id": "2a1556b2-1c5a-41f4-9c19-4e9399be5443"
+      }
+    },
+    {
+      "step": "2. Sovereign (Aakanksha)",
+      "status": "SUCCESS",
+      "ts": "2026-06-20T08:23:54.598459+00:00",
+      "data": {
+        "decision": "ALLOW",
+        "risk": "LOW",
+        "score": 0.0
+      }
+    },
+    {
+      "step": "3. CET Contract (Tanvi)",
+      "status": "SUCCESS",
+      "ts": "2026-06-20T08:23:55.232313+00:00",
+      "data": {
+        "contract_hash": "26352783864f0224048cf6d95e6f4b7157bc2db0"
+      }
+    },
+    {
+      "step": "4. Sarathi Enforcement (Rajaryan)",
+      "status": "SUCCESS",
+      "ts": "2026-06-20T08:23:55.499809+00:00",
+      "data": {
+        "status": "ALLOW",
+        "has_jwt": true,
+        "jwt_preview": "eyJhbGciOiJSUzI1NiIsImtpZCI6InNhcmF0aGkta2V5LTAwMS..."
+      }
+    },
+    {
+      "step": "5. Bridge Validation (Ranjit)",
+      "status": "SUCCESS",
+      "ts": "2026-06-20T08:23:56.613873+00:00",
+      "data": {
+        "response": "{'trace_id': '2a1556b2-1c5a-41f4-9c19-4e9399be5443', 'execution_id': 'exec-312c7209c1ed', 'status': 'completed', 'result': {'output': 'Proce"
+      }
+    },
+    {
+      "step": "6. Execution (Core)",
+      "status": "SUCCESS",
+      "ts": "2026-06-20T08:23:56.613873+00:00",
+      "data": {
+        "task_id": "7494368d-fd69-41dc-8ccf-93f86028eae7",
+        "agent": "edumentor_agent"
+      }
+    },
+    {
+      "step": "7. Bucket Truth Write (Siddhesh)",
+      "status": "SUCCESS",
+      "ts": "2026-06-20T08:23:57.202120+00:00",
+      "data": {
+        "hash": "ff3a3c8380982a9dfd5f7d31368f6ab4786c3a85",
+        "storage": "append_only"
+      }
+    },
+    {
+      "step": "8. InsightFlow Telemetry (Vijay)",
+      "status": "SUCCESS",
+      "ts": "2026-06-20T08:23:57.477525+00:00",
+      "data": {
+        "dataset_id": "8eee6fed-08e3-4a59-bb65-a3e4842fdcf2",
+        "status": "ACTIVE"
+      }
+    }
+  ],
+  "trace_id": "2a1556b2-1c5a-41f4-9c19-4e9399be5443",
+  "version": "v4",
+  "summary": {
+    "success": 8,
+    "partial": 0,
+    "failed": 0,
+    "total": 8
+  }
+}
