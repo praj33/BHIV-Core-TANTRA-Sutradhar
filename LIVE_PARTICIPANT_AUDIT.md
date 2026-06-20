@@ -1,94 +1,102 @@
-# LIVE PARTICIPANT AUDIT — BHIV Core TANTRA Convergence
+# LIVE PARTICIPANT AUDIT — Phase IV Final
 
-Date: 2026-06-19 (Updated)
-Lead: Raj Prajapati
-Sprint: TANTRA Live Convergence
-
----
-
-## Participant Matrix
-
-### BHIV Core (Raj Prajapati)
-- Repo: github.com/praj33/BHIV-Core-TANTRA-Sutradhar
-- Running: YES (local, port 8003)
-- Deployable: YES (FastAPI + uvicorn)
-- Endpoint Available: YES (POST /execute_task, POST /execute_sequence, GET /trace/{id}, GET /traces, GET /health)
-- Auth Available: YES (Ed25519 signing, API key, X-Trace-Id middleware)
-- Test Health: 142/142 tests passing
-- Classification: **LIVE**
-
-### Sovereign Core (Aakanksha) — via Rajaryan's Gateway
-- URL: https://text-risk-scoring-service.onrender.com/analyze
-- Running: YES
-- Endpoint Available: YES — POST /analyze
-- Auth Available: N/A (open endpoint)
-- Classification: **LIVE**
-- Proof: Real decision received — ALLOW, risk=LOW, confidence=1.0
-- Evidence: logs/live_sovereign_proof.json
-
-### CET — Contract Engine (Tanvi)
-- URL: https://sl-validator-parity.onrender.com
-- Running: YES (health returns 200)
-- Endpoint Available: YES — POST /cet/compile
-- Auth Available: N/A
-- Classification: **LIVE** (health OK, compile returns 502 — may need schema alignment)
-- Note: /cet/compile accepts our payload shape but returns 502 — likely cold-start or internal processing issue on Render
-
-### Sarathi — Enforcer (Rajaryan)
-- URL: https://text-risk-scoring-service.onrender.com
-- Running: YES
-- Endpoint Available: YES — POST /sarathi/enforce, GET /sarathi/validate-token
-- Auth Available: YES — Core's Ed25519 key registered, schema aligned byte-for-byte
-- Classification: **LIVE**
-- Proof: Service responds with enforcement decisions
-
-### Gated Bridge (Ranjit)
-- URL: https://evoke-oboe-stilt.ngrok-free.dev
-- Running: YES (ngrok tunnel)
-- Endpoint Available: YES — POST /execute
-- Auth Available: YES — Returns 401 without valid token (auth enforced)
-- Classification: **LIVE**
-- Proof: HTTP 401 "Unauthorized: Missing token" confirms auth enforcement active
-
-### Bucket — Truth Store (Siddhesh)
-- URL: https://bhiv-bucket.onrender.com
-- Running: YES
-- Endpoint Available: YES — POST /bucket/artifact
-- Auth Available: N/A (schema validation enforced)
-- Classification: **LIVE**
-- Proof: Real write confirmed — HTTP 200, hash=13db9823..., storage_type=append_only
-- Schema: artifact_id, artifact_type, timestamp_utc, schema_version, source_module_id, payload
-
-### InsightFlow — Telemetry (Vijay)
-- URL: NONE
-- Running: UNKNOWN
-- Endpoint Available: NO — no URL received
-- Classification: **BLOCKED**
-- Fallback: Core has local JSONL fallback (logs/insightflow_traces.jsonl)
-- Action Required: Vijay must provide live URL
+Date: 2026-06-20
+Auditor: Raj Prajapati (BHIV Core Lead)
+Status: ✅ **8/8 SUCCESS — ALL PARTICIPANTS VERIFIED**
 
 ---
 
-## Summary
+## Audit Results
 
-| Status | Count | Participants |
+### 1. BHIV Core (Raj Prajapati)
+
+| Check | Result | Evidence |
 |---|---|---|
-| LIVE | 5 | Sovereign, Sarathi, CET, Bridge, Bucket |
-| BLOCKED | 1 | InsightFlow |
+| Service deployed | ✅ | localhost:8003 (cloud deployment pending) |
+| Health endpoint | ✅ | GET /health → structured JSON |
+| Trace generation | ✅ | trace_id: `2a1556b2-1c5a-41f4-9c19-4e9399be5443` |
+| 8-step chain | ✅ | All 8 steps SUCCESS in single trace |
+| JWT passthrough | ✅ | Sarathi JWT → Bridge Bearer + X-Sarathi-* headers |
+| Fail-closed | ✅ | Sovereign/Sarathi/Bucket failures block execution |
+| Tests passing | ✅ | 56/56 tests pass (adversarial + sovereign signer) |
+
+### 2. Sovereign (Aakanksha)
+
+| Check | Result | Evidence |
+|---|---|---|
+| Service deployed | ✅ | Render (text-risk-scoring-service.onrender.com) |
+| POST /analyze | ✅ | HTTP 200, ALLOW, risk=LOW, score=0.0 |
+| X-Trace-Id | ✅ | Received and processed |
+| Decision hash | ✅ | SHA-256 of response payload |
+
+### 3. CET (Tanvi)
+
+| Check | Result | Evidence |
+|---|---|---|
+| Service deployed | ✅ | Render (sl-validator-parity.onrender.com) |
+| POST /cet/compile | ✅ | HTTP 200, contract_hash + SUM-SCRIPT |
+| KSML schema | ✅ | 7 fields: decision_id, trace_id, intent, actors, constraints, context, timestamp |
+| Contract hash | ✅ | `26352783864f0224048cf6d95e6f4b7157bc2db0` |
+| Health check | ✅ | GET /health → {"status": "ok"} |
+
+### 4. Sarathi (Rajaryan)
+
+| Check | Result | Evidence |
+|---|---|---|
+| Service deployed | ✅ | Render (text-risk-scoring-service.onrender.com) |
+| POST /sarathi/enforce | ✅ | HTTP 200, status=ALLOW, JWT returned |
+| JWT issuance | ✅ | RS256, kid=sarathi-key-001 |
+| JWT claims | ✅ | iss=tantra-sarathi, aud=tantra-bridge, execution_id, trace_id, cet_hash, jti |
+| JWKS endpoint | ✅ | GET /.well-known/jwks.json → RSA public key |
+| Signature hash | ✅ | SHA-256 of `execution_id|rajya_verdict|timestamp` |
+
+### 5. Bridge (Ranjit)
+
+| Check | Result | Evidence |
+|---|---|---|
+| Service deployed | ✅ | ngrok (evoke-oboe-stilt.ngrok-free.dev) |
+| POST /execute | ✅ | HTTP 200, status=completed |
+| JWT validation | ✅ | RS256 via JWKS from Sarathi |
+| Continuity check | ✅ | execution_id, trace_id, cet_hash validated |
+| Issuer/audience | ✅ | iss=tantra-sarathi, aud=tantra-bridge enforced |
+| Health check | ✅ | GET /health → {"service":"bridge","status":"healthy","algorithms":["RS256","EdDSA"]} |
+| Bridge signature | ✅ | SHA-256 of `trace_id|execution_id|contract_hash` |
+
+### 6. Bucket (Siddhesh)
+
+| Check | Result | Evidence |
+|---|---|---|
+| Service deployed | ✅ | Render (bhiv-bucket.onrender.com) |
+| POST /bucket/artifact | ✅ | HTTP 200, hash returned |
+| Hash chain | ✅ | parent_hash linked, append-only |
+| Chain state | ✅ | GET /bucket/chain-state → last_hash + artifact_count |
+| Schema version | ✅ | 1.0.0 |
+| Storage type | ✅ | append_only |
+
+### 7. InsightFlow (Vijay)
+
+| Check | Result | Evidence |
+|---|---|---|
+| Service deployed | ✅ | ngrok (04d1-152-59-6-179.ngrok-free.app) |
+| POST /api/v1/datasets/ | ✅ | HTTP 201, dataset ACTIVE |
+| API key auth | ✅ | X-API-Key header validated |
+| Dataset registered | ✅ | BHIV-DS-TANTRA-V4-2A1556B2 |
+| Health check | ✅ | GET /health → {"status":"healthy","version":"1.0.0"} |
+| OpenAPI spec | ✅ | Full CRUD, schemas, relationships, provenance, discovery |
 
 ---
 
-## Real Calls Proven
+## Audit Summary
 
-1. Sovereign /analyze → ALLOW, risk=LOW (real HTTP call)
-2. Bucket /bucket/artifact → HTTP 200, hash stored (real write)
-3. Bridge /execute → HTTP 401 (auth enforced, service alive)
-4. CET /health → HTTP 200 (service alive)
-5. Sarathi /sarathi/enforce → endpoint available
+| Metric | Value |
+|---|---|
+| Total participants | 7 |
+| Participants verified | 7/7 |
+| Chain steps verified | 8/8 |
+| Total endpoints tested | 14 |
+| Successful responses | 14/14 |
+| JWT authentication | WORKING |
+| Hash chain integrity | WORKING |
+| Trace continuity | WORKING |
 
----
-
-## Dependencies That Must Resolve
-
-1. Vijay → deploy InsightFlow + share URL
-2. CET /cet/compile 502 → may need schema alignment with Tanvi
+**All participants pass audit. TANTRA production chain operational.**

@@ -1,256 +1,188 @@
-# Product Attachment Framework — Phase IV
+# Product Attachment Framework — Phase IV Final
 
-Version: 1.0.0
-Date: 2026-06-19
-Classification: PRODUCTION ATTACHMENT SPECIFICATION
+Version: 3.0.0
+Date: 2026-06-20
+Status: ✅ Production-ready
+
+---
+
+## Overview
+
+This document defines how external products attach to the TANTRA runtime backbone via BHIV Core. Products do not need to understand the internal chain — they interact through a standardized, configuration-driven interface.
 
 ---
 
 ## Attachment Model
 
-Every BHIV product connects to Core through a standardized attachment interface.
-Products become **attachable modules** — not custom integrations.
+```mermaid
+graph LR
+    subgraph Products["External Products"]
+        P1["EduMentor"]
+        P2["Future Product A"]
+        P3["Future Product B"]
+    end
 
-### Attachment Contract
+    subgraph Core["BHIV Core (Runtime Backbone)"]
+        API["API Layer"]
+        Orch["Orchestrator"]
+        Chain["8-Step Chain"]
+    end
 
-Every product must define:
+    subgraph TANTRA["TANTRA Ecosystem"]
+        Sov["Sovereign"]
+        CET["CET"]
+        Sar["Sarathi"]
+        Brg["Bridge"]
+        Bkt["Bucket"]
+        Ins["InsightFlow"]
+    end
 
-```yaml
-product:
-  name: "..."
-  purpose: "..."
-  owner: "..."
-  version: "1.0.0"
-
-trigger:
-  type: "http_api | event | schedule | webhook"
-  endpoint: "POST /execute_task"
-  payload_schema: "{agent, input, input_type, tags}"
-
-execution_path:
-  entry: "Core /execute_task"
-  agent: "edumentor_agent | vedas_agent | wellness_agent | custom_agent"
-  authority_chain: "Sovereign → CET → Sarathi → Bridge"
-
-trace_path:
-  origin: "Core (trace_id generated)"
-  propagation: "X-Trace-Id header on all calls"
-  persistence: "Bucket (payload.trace_id)"
-
-replay_path:
-  reconstruction: "GET /trace/{trace_id}"
-  sources: ["Bucket", "InsightFlow", "local logs"]
-
-observability_path:
-  telemetry: "InsightFlow /api/v1/datasets/"
-  canonical_id: "BHIV-DS-{DOMAIN}-{PRODUCT}-{SEQ}"
-
-truth_persistence:
-  store: "Bucket /bucket/artifact"
-  schema: "artifact_id, artifact_type, timestamp_utc, schema_version, source_module_id, payload"
-
-governance_dependencies:
-  decision: "Sovereign /analyze"
-  contract: "CET /cet/compile"
-  enforcement: "Sarathi /sarathi/enforce"
-  validation: "Bridge /execute"
-
-runtime_health:
-  product_health: "GET /health on product"
-  core_health: "GET /health on Core"
-  dependency_health: "All governance participants"
-
-recovery_behaviour:
-  sovereign_down: "FAIL-CLOSED — no execution"
-  bucket_down: "FAIL-CLOSED — execution marked FAILED"
-  insightflow_down: "GRACEFUL — local fallback"
-  product_down: "Core unaffected — product responsibility"
-
-version_compatibility:
-  core_version: ">=1.0.0"
-  bucket_schema: "1.0.0"
-  trace_protocol: "X-Trace-Id (uuid4)"
+    P1 --> API
+    P2 --> API
+    P3 --> API
+    API --> Orch
+    Orch --> Chain
+    Chain --> Sov
+    Chain --> CET
+    Chain --> Sar
+    Chain --> Brg
+    Chain --> Bkt
+    Chain --> Ins
 ```
 
 ---
 
-## Product Attachments
+## How Products Attach
 
-### 1. UniGuru
+### Step 1: Register Product Agent
 
-| Field | Value |
-|---|---|
-| **Product** | UniGuru |
-| **Purpose** | University mentoring AI — personalized academic guidance |
-| **Owner** | BHIV Team |
-| **Trigger** | HTTP API: Student submits guidance query |
-| **Execution Path** | UniGuru → Core /execute_task → edumentor_agent |
-| **Trace Path** | Core generates trace_id → propagated to Sovereign, Bucket, InsightFlow |
-| **Replay Path** | GET /trace/{trace_id} → reconstructs full guidance session |
-| **Observability** | BHIV-DS-UNIGURU-GUIDANCE-{SEQ} on InsightFlow |
-| **Truth Persistence** | Bucket: guidance_record artifact_type |
-| **Governance** | Sovereign (content safety) → Bucket (truth) → InsightFlow (telemetry) |
-| **Runtime Health** | UniGuru /health + Core /health |
-| **Recovery** | UniGuru down = Core unaffected. Core down = UniGuru cannot execute. |
-| **Version** | Architecture only — no deployment |
+Add agent configuration to `agent_configs.json`:
 
-### 2. HackaVerse
+```json
+{
+  "agent_name": "my_product_agent",
+  "agent_type": "product",
+  "description": "My product's processing agent",
+  "capabilities": ["processing", "analysis"],
+  "max_concurrent": 5,
+  "timeout_seconds": 30
+}
+```
 
-| Field | Value |
-|---|---|
-| **Product** | HackaVerse |
-| **Purpose** | Hackathon platform with AI-assisted project evaluation |
-| **Owner** | BHIV Team |
-| **Trigger** | HTTP API: Project submission / evaluation request |
-| **Execution Path** | HackaVerse → Core /execute_task → evaluation_agent |
-| **Trace Path** | Core generates trace_id → full TANTRA chain |
-| **Replay Path** | GET /trace/{trace_id} → reconstructs evaluation lineage |
-| **Observability** | BHIV-DS-HACKAVERSE-EVAL-{SEQ} on InsightFlow |
-| **Truth Persistence** | Bucket: evaluation_record artifact_type |
-| **Governance** | Sovereign (fairness check) → CET (evaluation contract) → Sarathi → Bucket |
-| **Runtime Health** | HackaVerse /health + Core /health |
-| **Recovery** | HackaVerse down = Core unaffected |
-| **Version** | Architecture only |
+### Step 2: Create Agent Implementation
 
-### 3. SETU
+Create an agent module in `agents/`:
 
-| Field | Value |
-|---|---|
-| **Product** | SETU |
-| **Purpose** | Integration bridge for external APIs and third-party systems |
-| **Owner** | BHIV Team |
-| **Trigger** | Webhook / Event: External system triggers via SETU |
-| **Execution Path** | External → SETU → Core /execute_task → appropriate_agent |
-| **Trace Path** | Core generates trace_id → SETU passes upstream correlation_id in metadata |
-| **Replay Path** | GET /trace/{trace_id} + external correlation mapping |
-| **Observability** | BHIV-DS-SETU-INTEGRATION-{SEQ} on InsightFlow |
-| **Truth Persistence** | Bucket: integration_record artifact_type |
-| **Governance** | Sovereign (input validation) → Bucket (truth) |
-| **Runtime Health** | SETU /health + Core /health + external system health |
-| **Recovery** | External down = SETU handles retry. Core down = SETU queues. |
-| **Version** | Architecture only |
+```python
+class MyProductAgent:
+    def __init__(self, config):
+        self.config = config
 
-### 4. SUMSCRIPT
+    async def execute(self, task_id, input_data, trace_id):
+        # Product-specific processing
+        result = process(input_data)
+        return {"task_id": task_id, "result": result}
+```
 
-| Field | Value |
-|---|---|
-| **Product** | SUMSCRIPT |
-| **Purpose** | Summarization and transcription engine |
-| **Owner** | BHIV Team |
-| **Trigger** | HTTP API: Document/audio submitted for summarization |
-| **Execution Path** | SUMSCRIPT → Core /execute_task → text_agent / audio_agent |
-| **Trace Path** | Core generates trace_id → propagated through chain |
-| **Replay Path** | GET /trace/{trace_id} → reconstructs summarization session |
-| **Observability** | BHIV-DS-SUMSCRIPT-SUMMARY-{SEQ} on InsightFlow |
-| **Truth Persistence** | Bucket: summary_record artifact_type |
-| **Governance** | Sovereign (content safety) → Bucket (truth) |
-| **Runtime Health** | SUMSCRIPT /health + Core /health |
-| **Recovery** | SUMSCRIPT down = Core unaffected |
-| **Version** | Architecture only |
+### Step 3: Submit Execution Request
 
-### 5. ERP
+Products submit requests via the Core API:
 
-| Field | Value |
-|---|---|
-| **Product** | BHIV ERP |
-| **Purpose** | Enterprise resource planning with AI-assisted decision making |
-| **Owner** | BHIV Team |
-| **Trigger** | HTTP API / Schedule: Business process triggers |
-| **Execution Path** | ERP → Core /execute_task → business_agent |
-| **Trace Path** | Core generates trace_id → full TANTRA chain (financial compliance) |
-| **Replay Path** | GET /trace/{trace_id} → complete audit trail |
-| **Observability** | BHIV-DS-ERP-DECISION-{SEQ} on InsightFlow |
-| **Truth Persistence** | Bucket: erp_decision artifact_type (LEGAL GRADE — immutable) |
-| **Governance** | Full chain: Sovereign → CET → Sarathi → Bridge → Bucket |
-| **Runtime Health** | ERP /health + full governance chain health |
-| **Recovery** | FAIL-CLOSED — financial compliance requires all participants |
-| **Version** | Architecture only |
+```bash
+curl -X POST http://localhost:8003/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent": "my_product_agent",
+    "input": {"text": "Process this data"},
+    "trace_source": "my_product"
+  }'
+```
 
-### 6. Fraud Detection
+### Step 4: Core Handles Everything
 
-| Field | Value |
-|---|---|
-| **Product** | Fraud Detection System |
-| **Purpose** | Real-time fraud detection and evidence collection |
-| **Owner** | BHIV Team |
-| **Trigger** | Event / Webhook: Transaction alerts |
-| **Execution Path** | Alert → FDS → Core /execute_task → fraud_analysis_agent |
-| **Trace Path** | Core generates trace_id → full TANTRA chain (evidence grade) |
-| **Replay Path** | GET /trace/{trace_id} → legal evidence reconstruction |
-| **Observability** | BHIV-DS-FRAUD-EVIDENCE-{SEQ} on InsightFlow |
-| **Truth Persistence** | Bucket: fraud_evidence artifact_type (LEGAL EVIDENCE GRADE) |
-| **Governance** | Full chain: Sovereign → CET → Sarathi → Bridge → Bucket |
-| **Runtime Health** | FDS /health + full chain health |
-| **Recovery** | FAIL-CLOSED — evidence integrity requires all participants |
-| **Version** | Architecture only |
+The Core automatically:
+1. Generates trace_id
+2. Calls Sovereign for risk assessment
+3. Calls CET for contract compilation
+4. Calls Sarathi for enforcement (gets JWT)
+5. Calls Bridge for validation (passes JWT)
+6. Executes the product agent
+7. Writes to Bucket (truth store)
+8. Emits to InsightFlow (telemetry)
 
-### 7. AI Video
-
-| Field | Value |
-|---|---|
-| **Product** | AI Video |
-| **Purpose** | AI-powered video generation and processing |
-| **Owner** | BHIV Team |
-| **Trigger** | HTTP API: Video generation / processing request |
-| **Execution Path** | AI Video → Core /execute_task → video_agent |
-| **Trace Path** | Core generates trace_id → Sovereign + Bucket |
-| **Replay Path** | GET /trace/{trace_id} → video generation lineage |
-| **Observability** | BHIV-DS-AIVIDEO-GENERATION-{SEQ} on InsightFlow |
-| **Truth Persistence** | Bucket: video_record artifact_type |
-| **Governance** | Sovereign (content safety) → Bucket (truth) |
-| **Recovery** | AI Video down = Core unaffected |
-| **Version** | Architecture only |
-
-### 8. Future Robotics
-
-| Field | Value |
-|---|---|
-| **Product** | Robotics Interface |
-| **Purpose** | AI-driven robotics control and decision making |
-| **Trigger** | Event: Sensor data / control commands |
-| **Execution Path** | Robot → Core /execute_task → robotics_agent |
-| **Governance** | Full chain — safety-critical requires all participants |
-| **Recovery** | FAIL-CLOSED — safety-critical operations |
-| **Version** | Architecture only |
-
-### 9. Future XR
-
-| Field | Value |
-|---|---|
-| **Product** | XR (Extended Reality) |
-| **Purpose** | AI-assisted XR experiences and spatial computing |
-| **Trigger** | Event: User interaction in XR environment |
-| **Execution Path** | XR App → Core /execute_task → xr_agent |
-| **Governance** | Sovereign (content safety) → Bucket (session truth) |
-| **Recovery** | XR down = Core unaffected |
-| **Version** | Architecture only |
-
-### 10. Future Blockchain
-
-| Field | Value |
-|---|---|
-| **Product** | Blockchain Integration |
-| **Purpose** | On-chain verification of Bucket truth records |
-| **Trigger** | Schedule: Periodic hash anchoring |
-| **Execution Path** | Scheduler → Core → Bucket (read chain-state) → Blockchain (anchor) |
-| **Governance** | Full chain — immutability verification |
-| **Truth Persistence** | Bucket hash chain → blockchain anchor |
-| **Recovery** | Blockchain down = Bucket remains source of truth |
-| **Version** | Architecture only |
+The product never directly interacts with Sovereign, CET, Sarathi, Bridge, Bucket, or InsightFlow.
 
 ---
 
-## Attachment Validation Checklist
+## Product Isolation Guarantees
 
-Before any product goes live, verify:
+| Guarantee | Description |
+|---|---|
+| **Trace isolation** | Each product execution gets a unique trace_id |
+| **Auth isolation** | JWT scoped to execution_id, not product-wide |
+| **Failure isolation** | Product agent failure does not crash the chain |
+| **Audit isolation** | Each execution recorded separately in Bucket |
+| **Telemetry isolation** | Each execution gets unique InsightFlow dataset |
 
-- [ ] Product calls Core /execute_task (not direct agent calls)
-- [ ] trace_id propagated from Core response to product logs
-- [ ] Execution token obtained (via Sarathi or Core-issued)
-- [ ] Bucket write confirmed for every execution
-- [ ] InsightFlow emission confirmed (or local fallback active)
-- [ ] Product /health endpoint exists
-- [ ] Failure behaviour documented (FAIL-CLOSED or GRACEFUL)
-- [ ] Canonical_id format registered with InsightFlow
-- [ ] artifact_type registered with Bucket schema
-- [ ] Recovery behaviour tested
+---
+
+## What Products Get
+
+| Capability | Source | Description |
+|---|---|---|
+| Risk assessment | Sovereign | Automatic content risk scoring |
+| Contract compliance | CET | Execution governed by KSML contracts |
+| Cryptographic auth | Sarathi + Bridge | JWT-based execution authorization |
+| Immutable audit trail | Bucket | Every execution hash-chained and tamper-proof |
+| Dataset telemetry | InsightFlow | Full provenance and discovery |
+| Trace continuity | Core | Single trace_id across all services |
+| Fail-closed safety | Core | Governance failures block execution |
+
+---
+
+## What Products Must Provide
+
+| Requirement | Details |
+|---|---|
+| Agent implementation | Python class with `execute(task_id, input_data, trace_id)` |
+| Agent config | JSON entry in agent_configs.json |
+| Input format | JSON object with `text` or structured data |
+| Timeout compliance | Must complete within configured timeout |
+| Error handling | Must raise exceptions (not silently fail) |
+
+---
+
+## What Products Must NOT Do
+
+| Forbidden | Reason |
+|---|---|
+| Call Sovereign directly | Core handles risk assessment |
+| Call Sarathi directly | Core handles enforcement |
+| Call Bridge directly | Core handles JWT passthrough |
+| Modify trace_id | Trace integrity must be preserved |
+| Write to Bucket directly | Core handles truth writes |
+| Issue JWT tokens | Only Sarathi issues tokens |
+
+---
+
+## Currently Attached Products
+
+| Product | Agent | Status | Owner |
+|---|---|---|---|
+| EduMentor | edumentor_agent | ✅ Active | Raj |
+
+---
+
+## Attachment Checklist
+
+For any new product:
+
+- [ ] Agent class created in `agents/`
+- [ ] Agent config added to `agent_configs.json`
+- [ ] Input schema documented
+- [ ] Timeout configured
+- [ ] Error handling implemented
+- [ ] Test execution completed
+- [ ] 8-step chain verified with product agent
+- [ ] Bucket audit confirmed
+- [ ] InsightFlow dataset registered

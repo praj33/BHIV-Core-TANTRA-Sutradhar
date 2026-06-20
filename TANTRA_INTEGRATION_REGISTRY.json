@@ -1,217 +1,238 @@
 {
-  "registry_version": "1.0.0",
-  "updated_at": "2026-06-19T07:00:00Z",
-  "ecosystem": "TANTRA",
-  "total_participants": 13,
-
-  "infrastructure_participants": {
+  "registry_version": "3.0.0",
+  "last_updated": "2026-06-20T08:23:51Z",
+  "status": "8/8 SUCCESS",
+  "proof_trace_id": "2a1556b2-1c5a-41f4-9c19-4e9399be5443",
+  "participants": {
     "bhiv_core": {
-      "system_name": "BHIV Core",
+      "name": "BHIV Core",
       "owner": "Raj Prajapati",
-      "purpose": "Central orchestration, trace origin, execution gate, governance enforcement",
-      "inputs": ["user_request", "agent_task", "execution_token", "trace_id"],
-      "outputs": ["execution_result", "trace_context", "decision_signal", "bucket_record"],
-      "current_status": "OPERATIONAL",
-      "integration_status": "CONVERGED",
-      "live_url": "http://localhost:8003",
-      "endpoints": ["POST /execute_task", "POST /execute_sequence", "GET /trace/{id}", "GET /traces", "GET /health"],
-      "trace_requirements": "Generates trace_id (uuid4), propagates X-Trace-Id on all calls",
-      "evidence_requirements": "142/142 tests, full chain proof, replay reconstruction"
+      "layer": "origin",
+      "purpose": "Runtime backbone — orchestrates the 8-step TANTRA execution chain",
+      "url": "http://localhost:8003",
+      "deployment": "local",
+      "status": "operational",
+      "failure_mode": "fail-closed",
+      "trace_requirements": {
+        "generates": ["trace_id"],
+        "propagates": ["X-Trace-Id"]
+      }
     },
     "sovereign": {
-      "system_name": "Sovereign Core",
-      "owner": "Aakanksha (integrated in Rajaryan gateway)",
-      "purpose": "Decision authority — evaluates input risk and issues ALLOW/DENY verdict",
-      "inputs": ["text (input to evaluate)"],
-      "outputs": ["risk_score", "risk_category", "confidence_score", "decision (ALLOW/DENY)"],
-      "current_status": "OPERATIONAL",
-      "integration_status": "INTEGRATED",
-      "live_url": "https://text-risk-scoring-service.onrender.com",
-      "endpoints": ["POST /analyze"],
-      "trace_requirements": "Receives X-Trace-Id header from Core",
-      "evidence_requirements": "Real ALLOW decision proven, risk=LOW, confidence=0.5"
+      "name": "Sovereign",
+      "owner": "Aakanksha",
+      "layer": "governance",
+      "purpose": "Risk assessment — determines ALLOW/DENY based on content analysis",
+      "url": "https://text-risk-scoring-service.onrender.com",
+      "endpoint": "/analyze",
+      "method": "POST",
+      "deployment": "render",
+      "status": "operational",
+      "failure_mode": "fail-closed",
+      "input_schema": {
+        "text": "string"
+      },
+      "output_schema": {
+        "risk_category": "string (LOW/MEDIUM/HIGH)",
+        "risk_score": "float",
+        "decision": "string (ALLOW/DENY)"
+      },
+      "auth": "none",
+      "trace_requirements": {
+        "receives": ["X-Trace-Id"],
+        "produces": ["decision_hash"]
+      }
     },
     "cet": {
-      "system_name": "CET (Contract Execution Template)",
+      "name": "CET (Compliance Execution Transpiler)",
       "owner": "Tanvi",
-      "purpose": "Contract compilation — generates cryptographic contract from decision + input",
-      "inputs": ["trace_id", "input", "decision_hash", "timestamp"],
-      "outputs": ["contract_hash", "compiled_contract"],
-      "current_status": "PARTIAL",
-      "integration_status": "CONNECTED",
-      "live_url": "https://sl-validator-parity.onrender.com",
-      "endpoints": ["POST /cet/compile", "GET /health"],
-      "trace_requirements": "Receives trace_id in payload and X-Trace-Id header",
-      "evidence_requirements": "Health OK (HTTP 200). /cet/compile returns 502 — schema alignment needed"
+      "layer": "governance",
+      "purpose": "Compiles KSML decision objects into executable SUM-SCRIPTs",
+      "url": "https://sl-validator-parity.onrender.com",
+      "endpoint": "/cet/compile",
+      "method": "POST",
+      "deployment": "render",
+      "status": "operational",
+      "failure_mode": "fail-closed",
+      "input_schema": {
+        "trace_id": "string",
+        "input": {
+          "decision_id": "string",
+          "trace_id": "string",
+          "intent": "string (TransferFunds)",
+          "actors": "dict of named objects with properties",
+          "constraints": "list of {left, operator, right}",
+          "context": "dict",
+          "timestamp": "ISO 8601 string"
+        }
+      },
+      "output_schema": {
+        "contract_hash": "string (SHA-256)",
+        "sum_script": "object (compiled execution plan)"
+      },
+      "auth": "none",
+      "trace_requirements": {
+        "receives": ["trace_id", "X-Trace-Id"],
+        "produces": ["contract_hash"]
+      },
+      "notes": "Currently only supports intent=TransferFunds. Educational adapter pending."
     },
     "sarathi": {
-      "system_name": "Sarathi (Enforcement Gateway)",
+      "name": "Sarathi (Enforcement Gate)",
       "owner": "Rajaryan",
-      "purpose": "Enforcement — validates execution tokens, issues enforcement signals, governs execution",
-      "inputs": ["token (SarathiTokenInput dict)", "pipeline_execution_id"],
-      "outputs": ["enforcement_decision", "execution_token", "risk_score", "trace_hash"],
-      "current_status": "PARTIAL",
-      "integration_status": "CONNECTED",
-      "live_url": "https://text-risk-scoring-service.onrender.com",
-      "endpoints": ["POST /sarathi/enforce", "GET /sarathi/validate-token", "POST /api/v1/sutradhara/invoke", "POST /api/v1/dgic/ingest", "POST /api/v1/aggregate"],
-      "trace_requirements": "Receives X-Trace-Id header, validates trace_hash in enforcement",
-      "evidence_requirements": "Service alive (HTTP 422 — schema mismatch on token field type)"
+      "layer": "enforcement",
+      "purpose": "Cryptographic enforcement gate — validates execution approval and issues JWT tokens",
+      "url": "https://text-risk-scoring-service.onrender.com",
+      "endpoint": "/sarathi/enforce",
+      "method": "POST",
+      "deployment": "render",
+      "status": "operational",
+      "failure_mode": "fail-closed",
+      "input_schema": {
+        "token": {
+          "execution_id": "string",
+          "rajya_verdict": "EXECUTION_APPROVED",
+          "token_status": "VALID",
+          "timestamp": "ISO 8601",
+          "signature_hash": "SHA-256 of execution_id|rajya_verdict|timestamp"
+        },
+        "pipeline_execution_id": "string",
+        "trace_id": "string",
+        "cet_hash": "string"
+      },
+      "output_schema": {
+        "status": "ALLOW",
+        "jwt": "RS256 signed JWT"
+      },
+      "jwt_config": {
+        "algorithm": "RS256",
+        "kid": "sarathi-key-001",
+        "issuer": "tantra-sarathi",
+        "audience": "tantra-bridge",
+        "claims": ["iss", "aud", "exp", "iat", "execution_id", "trace_id", "cet_hash", "rajya_verdict", "jti"],
+        "jwks_endpoint": "/.well-known/jwks.json",
+        "expiry_seconds": 300
+      },
+      "auth": "sha256-signature-hash",
+      "trace_requirements": {
+        "receives": ["trace_id", "cet_hash"],
+        "produces": ["execution_id", "jwt"]
+      }
     },
     "bridge": {
-      "system_name": "Gated Bridge",
+      "name": "Bridge (Execution Gate)",
       "owner": "Ranjit",
-      "purpose": "Execution validation gate — final checkpoint before execution proceeds",
-      "inputs": ["trace_id", "execution_token", "contract_hash", "timestamp"],
-      "outputs": ["validation_status (VALIDATED/REJECTED)"],
-      "current_status": "PARTIAL",
-      "integration_status": "CONNECTED",
-      "live_url": "https://evoke-oboe-stilt.ngrok-free.dev",
-      "endpoints": ["POST /execute"],
-      "trace_requirements": "Receives X-Trace-Id header",
-      "evidence_requirements": "Service alive, auth enforced (HTTP 401 confirmed)"
+      "layer": "enforcement",
+      "purpose": "JWT validation gate — verifies Sarathi-issued tokens and enforces continuity",
+      "url": "https://evoke-oboe-stilt.ngrok-free.dev",
+      "endpoint": "/execute",
+      "method": "POST",
+      "deployment": "ngrok",
+      "status": "operational",
+      "failure_mode": "fail-closed",
+      "input_schema": {
+        "body": {
+          "trace_id": "string",
+          "execution_id": "string",
+          "execution_token": "JWT string",
+          "contract_hash": "string",
+          "cet_hash": "string",
+          "bridge_signature": "SHA-256 of trace_id|execution_id|contract_hash",
+          "timestamp": "ISO 8601"
+        },
+        "headers": {
+          "Authorization": "Bearer <JWT>",
+          "X-Sarathi-Execution-Id": "string",
+          "X-Sarathi-Trace-Id": "string",
+          "X-Sarathi-Cet-Hash": "string"
+        }
+      },
+      "output_schema": {
+        "trace_id": "string",
+        "execution_id": "string",
+        "status": "completed",
+        "result": "object"
+      },
+      "jwt_validation": {
+        "algorithms": ["RS256", "EdDSA"],
+        "required_issuer": "tantra-sarathi",
+        "required_audience": "tantra-bridge",
+        "jwks_source": "sarathi_url/.well-known/jwks.json",
+        "continuity_fields": ["execution_id", "trace_id", "cet_hash"]
+      },
+      "health_endpoint": "/health",
+      "auth": "jwt-bearer",
+      "trace_requirements": {
+        "receives": ["trace_id", "execution_id", "cet_hash"],
+        "validates": ["jwt_signature", "iss", "aud", "continuity"]
+      }
     },
     "bucket": {
-      "system_name": "Bucket (Truth Store)",
+      "name": "Bucket (Immutable Truth Store)",
       "owner": "Siddhesh",
-      "purpose": "Append-only truth store — immutable execution records with hash chain",
-      "inputs": ["artifact_id", "artifact_type", "timestamp_utc", "schema_version", "source_module_id", "payload"],
-      "outputs": ["hash", "parent_hash", "storage_type", "artifact_id"],
-      "current_status": "OPERATIONAL",
-      "integration_status": "INTEGRATED",
-      "live_url": "https://bhiv-bucket.onrender.com",
-      "endpoints": ["POST /bucket/artifact", "GET /bucket/artifact/{id}", "GET /bucket/artifacts", "POST /bucket/artifacts/write", "POST /bucket/validate-replay", "GET /bucket/chain-state", "GET /bucket/certification"],
-      "trace_requirements": "Receives X-Trace-Id header, stores trace_id in payload",
-      "evidence_requirements": "Real write proven — hash c1b89f0e, storage_type=append_only"
+      "layer": "truth",
+      "purpose": "Append-only artifact storage with hash chain integrity",
+      "url": "https://bhiv-bucket.onrender.com",
+      "endpoint": "/bucket/artifact",
+      "method": "POST",
+      "deployment": "render",
+      "status": "operational",
+      "failure_mode": "fail-closed",
+      "input_schema": {
+        "artifact_id": "uuid string",
+        "artifact_type": "string",
+        "timestamp_utc": "ISO 8601",
+        "schema_version": "1.0.0",
+        "source_module_id": "string",
+        "parent_hash": "string (from /bucket/chain-state)",
+        "payload": "object"
+      },
+      "output_schema": {
+        "hash": "SHA-256 string",
+        "storage_type": "append_only"
+      },
+      "chain_state_endpoint": "/bucket/chain-state",
+      "auth": "schema-validation",
+      "trace_requirements": {
+        "receives": ["trace_id (in payload)"],
+        "produces": ["artifact_hash", "chain_link"]
+      }
     },
     "insightflow": {
-      "system_name": "InsightFlow (Data Universe Registry)",
+      "name": "InsightFlow (Dataset Registry)",
       "owner": "Vijay",
-      "purpose": "Telemetry, observability, dataset registration — traces execution across ecosystem",
-      "inputs": ["canonical_id (BHIV-DS-DOMAIN-NAME-XXX)", "dataset_name", "owner_name", "domain_primary", "source_system", "metadata"],
-      "outputs": ["dataset_id", "status (ACTIVE)", "registered_at"],
-      "current_status": "OPERATIONAL",
-      "integration_status": "INTEGRATED",
-      "live_url": "https://061c-2409-40c2-3157-f51a-755f-1172-7e85-52fc.ngrok-free.app",
-      "endpoints": ["POST /api/v1/datasets/", "GET /health"],
-      "auth": {"header": "X-API-Key", "key": "vijay_insightflow_8c482c6e08fdbeba61800a8a09047630"},
-      "trace_requirements": "Receives X-Trace-Id header, stores trace_id in metadata",
-      "evidence_requirements": "HTTP 201 — dataset BHIV-DS-TANTRA-CHAIN-DC3F760F registered"
+      "layer": "truth",
+      "purpose": "Federated dataset metadata registry — telemetry, provenance, discovery",
+      "url": "https://04d1-152-59-6-179.ngrok-free.app",
+      "endpoint": "/api/v1/datasets/",
+      "method": "POST",
+      "deployment": "ngrok",
+      "status": "operational",
+      "failure_mode": "graceful-fallback",
+      "input_schema": {
+        "canonical_id": "string (e.g. BHIV-DS-TANTRA-V4-2A1556B2)",
+        "dataset_name": "string",
+        "description": "string",
+        "owner_name": "string",
+        "owner_team": "string",
+        "domain_primary": "string",
+        "source_system": "string",
+        "domain_tags": "list of strings",
+        "extended_metadata": "object (includes trace_id)"
+      },
+      "output_schema": {
+        "id": "uuid",
+        "status": "ACTIVE",
+        "canonical_id": "string"
+      },
+      "api_surface": ["datasets", "schemas", "relationships", "provenance", "discovery", "onboarding", "audit"],
+      "health_endpoint": "/health",
+      "auth": "x-api-key",
+      "api_key": "vijay_insightflow_8c482c6e08fdbeba61800a8a09047630",
+      "trace_requirements": {
+        "receives": ["trace_id (in extended_metadata)"],
+        "produces": ["dataset_id", "canonical_id"]
+      }
     }
-  },
-
-  "product_participants": {
-    "gurukul": {
-      "system_name": "Gurukul",
-      "owner": "BHIV Team",
-      "purpose": "Vedic education platform — interactive learning with knowledge agents",
-      "inputs": ["user_query", "learning_topic", "user_id"],
-      "outputs": ["learning_content", "quiz_results", "progress_data"],
-      "current_status": "ARCHITECTURAL",
-      "integration_status": "PLANNED",
-      "integration_point": "Core /execute_task via knowledge_agent",
-      "trace_requirements": "Must propagate trace_id from user session to Core",
-      "evidence_requirements": "None yet — architectural only"
-    },
-    "uniguru": {
-      "system_name": "UniGuru",
-      "owner": "BHIV Team",
-      "purpose": "University mentoring AI — personalized academic guidance",
-      "inputs": ["student_query", "academic_context", "user_id"],
-      "outputs": ["guidance_response", "recommendation", "learning_path"],
-      "current_status": "ARCHITECTURAL",
-      "integration_status": "PLANNED",
-      "integration_point": "Core /execute_task via edumentor_agent",
-      "trace_requirements": "Must propagate trace_id from user session to Core",
-      "evidence_requirements": "None yet — architectural only"
-    },
-    "sovereign_payroll": {
-      "system_name": "Sovereign Payroll",
-      "owner": "BHIV Team",
-      "purpose": "Payroll processing with governance enforcement",
-      "inputs": ["payroll_data", "employee_id", "pay_period"],
-      "outputs": ["payroll_decision", "compliance_report", "payment_authorization"],
-      "current_status": "ARCHITECTURAL",
-      "integration_status": "PLANNED",
-      "integration_point": "Core → Sovereign (decision) → Sarathi (enforcement) → Bucket (truth)",
-      "trace_requirements": "Full TANTRA trace required — financial compliance audit trail",
-      "evidence_requirements": "None yet — architectural only"
-    },
-    "fraud_evidence_system": {
-      "system_name": "Fraud Evidence System",
-      "owner": "BHIV Team",
-      "purpose": "Fraud detection and evidence collection with immutable audit trail",
-      "inputs": ["transaction_data", "behavioral_signals", "risk_indicators"],
-      "outputs": ["fraud_verdict", "evidence_package", "risk_assessment"],
-      "current_status": "ARCHITECTURAL",
-      "integration_status": "PLANNED",
-      "integration_point": "Core → Sovereign (risk scoring) → CET (contract) → Bucket (evidence)",
-      "trace_requirements": "Full TANTRA trace with Bucket immutability — legal evidence grade",
-      "evidence_requirements": "None yet — architectural only"
-    },
-    "karma_chain": {
-      "system_name": "KarmaChain (Karma Tracker)",
-      "owner": "Siddhesh (same as Bucket)",
-      "purpose": "User reputation and karma scoring across BHIV interactions",
-      "inputs": ["user_id", "action_type", "value"],
-      "outputs": ["karma_score", "last_update", "source_action"],
-      "current_status": "ARCHITECTURAL",
-      "integration_status": "CONNECTED",
-      "integration_point": "Core agents emit karma events → KarmaChain → Bucket",
-      "trace_requirements": "Karma events must include trace_id for auditability",
-      "evidence_requirements": "Client code exists (core/karma_client.py, core/karma_events.py). Service not yet deployed."
-    },
-    "agent_fabric": {
-      "system_name": "Agent Fabric",
-      "owner": "BHIV Team",
-      "purpose": "Multi-agent orchestration layer — manages agent lifecycle, routing, and composition",
-      "inputs": ["agent_config", "task_routing", "agent_composition"],
-      "outputs": ["agent_response", "execution_trace", "agent_metrics"],
-      "current_status": "PARTIAL",
-      "integration_status": "CONNECTED",
-      "integration_point": "Core agents (edumentor, vedas, wellness, knowledge, audio, voice, image, archive, stream_transformer)",
-      "trace_requirements": "Agent execution must include trace_id in all responses",
-      "evidence_requirements": "9 agents exist in /agents/ directory. Agent registry exists."
-    }
-  },
-
-  "discovered_participants": {
-    "sutradhara": {
-      "system_name": "Sutradhara",
-      "owner": "Rajaryan (hosted on Sarathi gateway)",
-      "purpose": "Control Plane (Layer 2) — agent registration verification before Sarathi governance",
-      "inputs": ["execution_id", "actor", "proposed_action", "context_signals", "dgic_epistemic_state", "source_system"],
-      "outputs": ["execution_id", "enforcement_decision", "risk_score", "confidence", "trace_hash"],
-      "current_status": "OPERATIONAL",
-      "integration_status": "CONNECTED",
-      "live_url": "https://text-risk-scoring-service.onrender.com",
-      "endpoints": ["POST /api/v1/sutradhara/invoke"],
-      "trace_requirements": "Generates trace_hash, receives execution_id",
-      "evidence_requirements": "Endpoint exists on Rajaryan's service"
-    },
-    "dgic": {
-      "system_name": "DGIC (Dynamic Governance Intelligence Core)",
-      "owner": "Rajaryan (hosted on Sarathi gateway)",
-      "purpose": "Epistemic state management — tracks contradiction, entropy, and lineage integrity",
-      "inputs": ["text", "dgic_envelope (epistemic_state, entropy_score, contradiction_flag, lineage_hash, envelope_hash)"],
-      "outputs": ["processed_dgic_state"],
-      "current_status": "OPERATIONAL",
-      "integration_status": "ARCHITECTURAL",
-      "live_url": "https://text-risk-scoring-service.onrender.com",
-      "endpoints": ["POST /api/v1/dgic/ingest"],
-      "trace_requirements": "Maintains lineage_hash and envelope_hash for epistemic integrity",
-      "evidence_requirements": "Endpoint exists on Rajaryan's service"
-    }
-  },
-
-  "dependency_graph": {
-    "core_depends_on": ["sovereign", "cet", "sarathi", "bridge", "bucket", "insightflow"],
-    "products_depend_on_core": ["gurukul", "uniguru", "sovereign_payroll", "fraud_evidence_system", "karma_chain", "agent_fabric"],
-    "sovereign_depends_on": [],
-    "sarathi_depends_on": ["sovereign", "sutradhara", "dgic"],
-    "cet_depends_on": ["sovereign"],
-    "bridge_depends_on": ["sarathi", "cet"],
-    "bucket_depends_on": [],
-    "insightflow_depends_on": [],
-    "karma_chain_depends_on": ["bucket"]
   }
 }

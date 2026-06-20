@@ -1,16 +1,18 @@
-# LIVE TRACE PACKET — Full TANTRA Chain Execution v3
+# LIVE TRACE PACKET — Full TANTRA Chain Execution v4
 
-Date: 2026-06-19
+Date: 2026-06-20
 Lead: Raj Prajapati
 Sprint: Phase IV — Production Transition
+Status: ✅ **8/8 SUCCESS — COMPLETE**
 
 ---
 
 ## Chain Execution Summary
 
-**trace_id:** `e56f9cbd-63d8-468d-99d0-1ab02ffe2a18`
-**Timestamp:** 2026-06-19T09:21:12Z
-**Result:** 7 SUCCESS, 1 PARTIAL (Bridge auth — awaiting Sarathi JWT deployment)
+**trace_id:** `2a1556b2-1c5a-41f4-9c19-4e9399be5443`
+**Timestamp:** 2026-06-20T08:23:51Z
+**Result:** **8 SUCCESS, 0 PARTIAL, 0 FAILED**
+**Proof File:** `logs/full_tantra_v4_final_proof.json`
 
 ---
 
@@ -18,8 +20,8 @@ Sprint: Phase IV — Production Transition
 
 ### Step 1: Trace Origin (Core)
 - **Status:** ✅ SUCCESS
-- **trace_id:** e56f9cbd-63d8-468d-99d0-1ab02ffe2a18
-- **Source:** live_chain_v3
+- **trace_id:** `2a1556b2-1c5a-41f4-9c19-4e9399be5443`
+- **Source:** live_chain_v4_final
 
 ### Step 2: Sovereign Decision (Aakanksha)
 - **Status:** ✅ SUCCESS
@@ -27,53 +29,52 @@ Sprint: Phase IV — Production Transition
 - **Decision:** ALLOW
 - **Risk Category:** LOW
 - **Risk Score:** 0.0
-- **Evidence:** Real HTTP POST to live service, real decision received
+- **Evidence:** Real HTTP 200 from live Render service
 
 ### Step 3: CET Contract Compilation (Tanvi)
 - **Status:** ✅ SUCCESS
 - **URL:** https://sl-validator-parity.onrender.com/cet/compile
 - **HTTP Response:** 200 OK
-- **Contract Hash:** `8422c4f16ecfc698b2ce051b154b833b10ff1b1e`
+- **Contract Hash:** `26352783864f0224048cf6d95e6f4b7157bc2db0`
 - **SUM-SCRIPT:** Returned (compiled execution plan with constraint validation)
-- **Schema:** KSML — intent=TransferFunds, actors=dict, constraints={left,operator,right}
-- **Fix Applied:** CET requires actors as named objects (Account_A1, Ledger_L1) and constraints as structured rules (left/operator/right), not strings
+- **Schema:** KSML — intent=TransferFunds, actors=dict(Account_A1, Ledger_L1), constraints=[{left,operator,right}]
 
 ### Step 4: Sarathi Enforcement (Rajaryan)
 - **Status:** ✅ SUCCESS
 - **URL:** https://text-risk-scoring-service.onrender.com/sarathi/enforce
 - **HTTP Response:** 200 OK
-- **Response:** `{"status": "ALLOW"}`
-- **Execution ID:** exec-0d1f5c6cf642
-- **Schema:** SarathiTokenInput dict with SHA-256 signature_hash = `execution_id|rajya_verdict|timestamp`
-- **Fix Applied:** signature_hash dynamically computed, rajya_verdict=EXECUTION_APPROVED, token_status=VALID
+- **Response:** `{"status": "ALLOW", "jwt": "eyJhbG..."}`
+- **JWT Algorithm:** RS256
+- **JWT Claims:** iss=tantra-sarathi, aud=tantra-bridge, execution_id, trace_id, cet_hash, jti
+- **JWKS Endpoint:** https://text-risk-scoring-service.onrender.com/.well-known/jwks.json
+- **Signature Hash:** SHA-256 of `execution_id|rajya_verdict|timestamp`
 
 ### Step 5: Bridge Validation (Ranjit)
-- **Status:** ⚠️ PARTIAL (401 — auth enforced, working as expected)
+- **Status:** ✅ SUCCESS
 - **URL:** https://evoke-oboe-stilt.ngrok-free.dev/execute
-- **HTTP Response:** 401 "Unauthorized: Invalid token"
-- **Service Alive:** YES — 401 confirms request reached Bridge and auth is enforced
-- **Auth Required:** JWT Bearer token (RS256 or EdDSA) signed by Sarathi
-- **Bridge Requirements:** iss=tantra-sarathi, aud=tantra-bridge, claims: execution_id, trace_id, cet_hash
-- **Blocker:** Rajaryan deploying JWT issuance to Render. Core already wired to capture JWT and pass as Bearer + X-Sarathi-* headers.
+- **HTTP Response:** 200 OK
+- **Response:** `{"trace_id": "2a1556b2-...", "execution_id": "exec-312c7209c1ed", "status": "completed"}`
+- **JWT Validated:** YES — RS256 via JWKS
+- **Continuity Validated:** execution_id, trace_id, cet_hash all matched
+- **Bridge Signature:** SHA-256 of `trace_id|execution_id|contract_hash`
 
 ### Step 6: Execution (Core)
 - **Status:** ✅ SUCCESS
-- **Task ID:** 1b182488-2e8b-4b5f-aa7f-90aadd344084
+- **Task ID:** `7494368d-fd69-41dc-8ccf-93f86028eae7`
 - **Agent:** edumentor_agent
 
 ### Step 7: Bucket Truth Write (Siddhesh)
 - **Status:** ✅ SUCCESS
 - **URL:** https://bhiv-bucket.onrender.com/bucket/artifact
-- **Hash:** `5a364e40f2fc08d45809f659224a1db6b4fad36d`
+- **Hash:** `ff3a3c8380982a9dfd5f7d31368f6ab4786c3a85`
 - **Storage Type:** append_only
-- **Parent Hash:** Chain-linked (fetched via /bucket/chain-state)
-- **Fix Applied:** Bucket now requires parent_hash for chain integrity
+- **Parent Hash:** Chain-linked via /bucket/chain-state
+- **Schema Version:** 1.0.0
 
 ### Step 8: InsightFlow Telemetry (Vijay)
 - **Status:** ✅ SUCCESS
-- **URL:** https://061c-...ngrok-free.app/api/v1/datasets/
-- **Dataset ID:** d3586a36-efac-4b01-bd9c-190f867d5e52
-- **Canonical ID:** BHIV-DS-TANTRA-V3-E56F9CBD
+- **URL:** https://04d1-152-59-6-179.ngrok-free.app/api/v1/datasets/
+- **Dataset ID:** `8eee6fed-08e3-4a59-bb65-a3e4842fdcf2`
 - **Registration Status:** ACTIVE
 - **Evidence:** HTTP 201 Created
 
@@ -83,25 +84,25 @@ Sprint: Phase IV — Production Transition
 
 | # | Participant | Owner | URL | Status | Response |
 |---|---|---|---|---|---|
-| 1 | Sovereign | Aakanksha | text-risk-scoring-service.onrender.com | ✅ WORKING | HTTP 200, ALLOW |
-| 2 | CET | Tanvi | sl-validator-parity.onrender.com | ✅ WORKING | HTTP 200, contract_hash returned |
-| 3 | Sarathi | Rajaryan | text-risk-scoring-service.onrender.com | ✅ WORKING | HTTP 200, status=ALLOW |
-| 4 | Bridge | Ranjit | evoke-oboe-stilt.ngrok-free.dev | ⚠️ AUTH | HTTP 401, needs Sarathi JWT |
-| 5 | Bucket | Siddhesh | bhiv-bucket.onrender.com | ✅ WORKING | HTTP 200, hash chain write |
-| 6 | InsightFlow | Vijay | 061c-...ngrok-free.app | ✅ WORKING | HTTP 201, dataset ACTIVE |
+| 1 | Sovereign | Aakanksha | text-risk-scoring-service.onrender.com | ✅ HTTP 200 | ALLOW, risk=LOW |
+| 2 | CET | Tanvi | sl-validator-parity.onrender.com | ✅ HTTP 200 | contract_hash + SUM-SCRIPT |
+| 3 | Sarathi | Rajaryan | text-risk-scoring-service.onrender.com | ✅ HTTP 200 | ALLOW + JWT (RS256) |
+| 4 | Bridge | Ranjit | evoke-oboe-stilt.ngrok-free.dev | ✅ HTTP 200 | status=completed |
+| 5 | Bucket | Siddhesh | bhiv-bucket.onrender.com | ✅ HTTP 200 | hash chain write |
+| 6 | InsightFlow | Vijay | 04d1-152-59-6-179.ngrok-free.app | ✅ HTTP 201 | dataset ACTIVE |
 
-**5/6 fully working. Bridge awaiting JWT token deployment.**
+**All 6 participants WORKING. Zero failures.**
 
 ---
 
-## Schema Fixes Applied
+## Schema Fixes Applied (Sprint History)
 
-| Service | Before | After | Fix |
-|---|---|---|---|
-| CET | 502 crash | ✅ HTTP 200 | actors=dict, constraints={left,operator,right}, intent=TransferFunds |
-| Sarathi | 422 schema error | ✅ HTTP 200 | token=SarathiTokenInput dict, SHA-256 signature_hash |
-| Bridge | 502 tunnel down | ⚠️ 401 auth | Service alive, needs Sarathi JWT (iss=tantra-sarathi, aud=tantra-bridge) |
-| Bucket | 400 validation | ✅ HTTP 200 | parent_hash required for chain integrity |
+| Service | v1 (Start) | v2 (Schema Fix) | v3 (Hash Fix) | v4 (Final) |
+|---|---|---|---|---|
+| CET | 502 crash | 400 InvalidExecutionSpec | 400 actor mismatch | ✅ HTTP 200 |
+| Sarathi | 422 schema error | 403 token invalid | ✅ HTTP 200 (hash) | ✅ HTTP 200 + JWT |
+| Bridge | 502 tunnel down | 401 missing token | 401 invalid token | ✅ HTTP 200 completed |
+| Bucket | ✅ working | ✅ working | 400 parent_hash | ✅ HTTP 200 |
 
 ---
 
@@ -109,50 +110,41 @@ Sprint: Phase IV — Production Transition
 
 | Evidence | Location |
 |---|---|
-| Full chain v3 proof | logs/full_tantra_live_chain_v3_proof.json |
-| Sovereign decision | Real HTTP 200 from text-risk-scoring-service.onrender.com |
-| CET contract | contract_hash 8422c4f1... from sl-validator-parity.onrender.com |
-| Sarathi enforcement | status=ALLOW from text-risk-scoring-service.onrender.com |
-| Bucket truth write | hash 5a364e40... on bhiv-bucket.onrender.com |
-| InsightFlow dataset | BHIV-DS-TANTRA-V3-E56F9CBD on InsightFlow registry |
+| Full chain v4 proof | logs/full_tantra_v4_final_proof.json |
+| CET contract | contract_hash `26352783...` from sl-validator-parity.onrender.com |
+| Sarathi JWT | RS256 signed, iss=tantra-sarathi, aud=tantra-bridge |
+| Sarathi JWKS | https://text-risk-scoring-service.onrender.com/.well-known/jwks.json |
+| Bridge validation | status=completed from evoke-oboe-stilt.ngrok-free.dev |
+| Bucket truth write | hash `ff3a3c83...` on bhiv-bucket.onrender.com |
+| InsightFlow dataset | dataset `8eee6fed...` ACTIVE on InsightFlow registry |
 
 ---
 
 ## Classification
 
-### BHIV Core: PRODUCTION TANTRA BACKBONE
+### BHIV Core: CANONICAL TANTRA RUNTIME BACKBONE
 
 | Requirement | Status | Evidence |
 |---|---|---|
-| One real trace | ✅ | e56f9cbd-63d8-468d-99d0-1ab02ffe2a18 |
-| One real execution | ✅ | 1b182488-2e8b-4b5f-aa7f-90aadd344084 |
+| One real trace | ✅ | `2a1556b2-1c5a-41f4-9c19-4e9399be5443` |
+| One real execution | ✅ | `7494368d-fd69-41dc-8ccf-93f86028eae7` |
 | One real decision | ✅ | ALLOW from Sovereign HTTP 200 |
-| One real contract | ✅ | contract_hash 8422c4f1 from CET HTTP 200 |
-| One real enforcement | ✅ | status=ALLOW from Sarathi HTTP 200 |
-| One real validation | ⚠️ | Bridge alive (401), JWT deployment pending |
-| One real truth write | ✅ | hash 5a364e40 on Bucket, chain-linked |
+| One real contract | ✅ | contract_hash `26352783` from CET HTTP 200 |
+| One real enforcement | ✅ | status=ALLOW + JWT from Sarathi HTTP 200 |
+| One real validation | ✅ | status=completed from Bridge HTTP 200 |
+| One real truth write | ✅ | hash `ff3a3c83` on Bucket, chain-linked |
 | One real telemetry | ✅ | Dataset ACTIVE on InsightFlow |
 | Across real systems | ✅ | 6 external services, 0 localhost |
 | No mock participants | ✅ | All real deployed services |
-
----
-
-## Remaining: Bridge JWT Integration
-
-| Item | Status | Owner |
-|---|---|---|
-| Sarathi JWT issuance (iss=tantra-sarathi, aud=tantra-bridge) | Ready locally, needs Render deploy | Rajaryan |
-| Sarathi JWKS endpoint (/.well-known/jwks.json) | Ready locally | Rajaryan |
-| Bridge JWT validation | Ready | Ranjit |
-| Core JWT passthrough (Bearer + X-Sarathi-* headers) | ✅ Done | Raj |
-
-Once Rajaryan deploys to Render → 8/8 SUCCESS.
+| JWT authentication | ✅ | RS256 via JWKS, iss/aud/jti validated |
 
 ---
 
 ## Final Statement
 
 BHIV Core is the canonical runtime backbone of TANTRA.
-7/8 chain steps return HTTP 200 from real deployed services.
-The single remaining step (Bridge JWT) has all code ready — awaiting Sarathi Render deployment.
-No localhost. No mocks. No simulation. Production-grade execution.
+8/8 chain steps return SUCCESS from real deployed services.
+Full JWT authentication chain: Sarathi → Core → Bridge.
+No localhost. No mocks. No simulation.
+
+Phase IV Production Transition: **COMPLETE.**

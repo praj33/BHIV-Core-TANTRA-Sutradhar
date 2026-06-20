@@ -1,105 +1,143 @@
-# Runtime Layer Map — Phase IV
+# Runtime Layer Map — Phase IV Final
 
-Version: 1.0.0
-Date: 2026-06-19
-
----
-
-## Layer 1 — Product Layer
-
-| Field | Value |
-|---|---|
-| **Responsibilities** | User-facing applications, domain-specific logic, UX |
-| **Capabilities** | Submit execution requests, receive results, display outcomes |
-| **Interfaces** | HTTP API calls to Core /execute_task and /execute_sequence |
-| **Participants** | Gurukul, UniGuru, HackaVerse, SETU, SUMSCRIPT, ERP, Fraud Detection, AI Video, Robotics, XR, Blockchain |
-| **Authority Limits** | Products CANNOT bypass Core. Products CANNOT call Sovereign/Sarathi/Bucket directly. Products MUST use Core as the single entry point. |
-| **Required Evidence** | trace_id logged per request, product /health endpoint, error handling for Core unavailability |
-| **Current Maturity** | ARCHITECTURAL — no products deployed through Core yet |
-| **Target Production Maturity** | Products attach via registry, no custom integration code |
+Version: 3.0.0
+Date: 2026-06-20
+Status: ✅ All layers verified
 
 ---
 
-## Layer 2 — Orchestration Layer
+## Overview
 
-| Field | Value |
-|---|---|
-| **Responsibilities** | Trace origin, agent routing, execution gating, authority coordination |
-| **Capabilities** | Generate trace_id, route to agents, enforce token-gated execution, record to Bucket, emit to InsightFlow |
-| **Interfaces** | FastAPI endpoints (POST /execute_task, POST /execute_sequence, GET /trace/{id}, GET /health) |
-| **Participants** | BHIV Core (sole participant) |
-| **Authority Limits** | Core DOES NOT make decisions (Sovereign does). Core DOES NOT enforce policy (Sarathi does). Core DOES NOT compile contracts (CET does). Core DOES NOT validate gates (Bridge does). Core DOES NOT define truth schema (Bucket does). |
-| **Required Evidence** | 142/142 tests, full chain proof, replay reconstruction, LIVE_TRACE_PACKET |
-| **Current Maturity** | CONVERGED — production-ready |
-| **Target Production Maturity** | Deployment to Render/cloud, TLS, rate limiting, monitoring |
+The TANTRA runtime is organized into 5 layers. Each participant belongs to exactly one layer. Execution flows top-down. Each layer must complete before the next begins.
 
 ---
 
-## Layer 3 — Governance Layer
+## Layer Architecture
 
-| Field | Value |
-|---|---|
-| **Responsibilities** | Decision making, contract compilation, enforcement, validation |
-| **Capabilities** | Risk scoring (Sovereign), contract hashing (CET), token issuance (Sarathi), gate validation (Bridge) |
-| **Interfaces** | POST /analyze, POST /cet/compile, POST /sarathi/enforce, POST /execute |
-| **Participants** | Sovereign (Aakanksha), CET (Tanvi), Sarathi (Rajaryan), Bridge (Ranjit), Sutradhara (Rajaryan), DGIC (Rajaryan) |
-| **Authority Limits** | Governance DOES NOT execute tasks. Governance DOES NOT store truth. Governance DOES NOT generate trace_id. Each governance participant owns ONLY its specific authority. |
-| **Required Evidence** | Decision proof (Sovereign), contract hash (CET), enforcement signal (Sarathi), validation status (Bridge) |
-| **Current Maturity** | CONNECTED — all services reachable, 3 need schema alignment |
-| **Target Production Maturity** | All schema mismatches resolved, real enforcement chain proven end-to-end |
+```mermaid
+graph TB
+    subgraph L1["Layer 1: Origin"]
+        Core["BHIV Core<br/>trace_id generation"]
+    end
 
----
+    subgraph L2["Layer 2: Governance"]
+        Sov["Sovereign<br/>Risk Assessment"]
+        CET["CET<br/>Contract Compilation"]
+    end
 
-## Layer 4 — Infrastructure Layer
+    subgraph L3["Layer 3: Enforcement"]
+        Sar["Sarathi<br/>Cryptographic Gate + JWT"]
+        Brg["Bridge<br/>JWT Validation + Continuity"]
+    end
 
-| Field | Value |
-|---|---|
-| **Responsibilities** | Truth storage, hash chain integrity, append-only audit trail |
-| **Capabilities** | Immutable artifact storage, hash chain verification, replay validation, chain state certification |
-| **Interfaces** | POST /bucket/artifact, GET /bucket/artifact/{id}, POST /bucket/validate-replay, GET /bucket/chain-state |
-| **Participants** | Bucket (Siddhesh), KarmaChain (Siddhesh) |
-| **Authority Limits** | Bucket validates STRUCTURE, not CONTENT (domain-agnostic). Bucket DOES NOT make decisions. Bucket DOES NOT enforce policy. |
-| **Required Evidence** | Real write with hash chain, append-only invariant, schema validation |
-| **Current Maturity** | INTEGRATED — real writes proven, hash chain working |
-| **Target Production Maturity** | Bucket backup/replication, KarmaChain deployment, chain anchoring |
+    subgraph L4["Layer 4: Execution"]
+        Exec["Agent Execution<br/>Task Processing"]
+    end
 
----
+    subgraph L5["Layer 5: Truth & Telemetry"]
+        Bkt["Bucket<br/>Immutable Truth Store"]
+        Ins["InsightFlow<br/>Dataset Registry"]
+    end
 
-## Layer 5 — Observability Layer
+    L1 --> L2
+    L2 --> L3
+    L3 --> L4
+    L4 --> L5
 
-| Field | Value |
-|---|---|
-| **Responsibilities** | Telemetry, dataset registration, execution monitoring, ecosystem-wide visibility |
-| **Capabilities** | Dataset registration, trace metadata storage, health monitoring |
-| **Interfaces** | POST /api/v1/datasets/, GET /health |
-| **Participants** | InsightFlow (Vijay) |
-| **Authority Limits** | InsightFlow DOES NOT block execution (only non-blocking participant). InsightFlow DOES NOT replace Bucket as source of truth. InsightFlow is BEST-EFFORT. |
-| **Required Evidence** | Dataset registration proof, canonical_id format, metadata schema |
-| **Current Maturity** | INTEGRATED — real dataset registration proven |
-| **Target Production Maturity** | Dashboard visualization, alerting, SLA monitoring |
+    style L1 fill:#4CAF50,color:#fff
+    style L2 fill:#2196F3,color:#fff
+    style L3 fill:#9C27B0,color:#fff
+    style L4 fill:#FF9800,color:#fff
+    style L5 fill:#009688,color:#fff
+```
 
 ---
 
-## Layer 6 — Agent Layer
+## Layer 1: Origin
 
-| Field | Value |
-|---|---|
-| **Responsibilities** | Domain-specific task execution (education, wellness, audio, voice, etc.) |
-| **Capabilities** | Text processing, knowledge retrieval, audio processing, voice synthesis, image processing |
-| **Interfaces** | Internal Python calls via execute_task() |
-| **Participants** | edumentor_agent, vedas_agent, wellness_agent, knowledge_agent, audio_agent, voice_persona_agent, image_agent, archive_agent, stream_transformer_agent |
-| **Authority Limits** | Agents CANNOT bypass execution gate. Agents CANNOT write directly to Bucket. Agents CANNOT call Sovereign. All agent execution goes through Core's gated_execute. |
-| **Required Evidence** | Agent registry, agent health, execution results |
-| **Current Maturity** | PARTIAL — 9 agents registered, not all production-tested |
-| **Target Production Maturity** | All agents testable, hot-pluggable, metrics-emitting |
+| Participant | Role | Failure Mode |
+|---|---|---|
+| **BHIV Core** | Generate trace_id, orchestrate chain | Cannot fail (local) |
+
+**Responsibility:** Create the execution trace and initiate the 8-step chain.
+**Output:** trace_id (uuid4) propagated to all participants via X-Trace-Id header.
 
 ---
 
-## Layer Interaction Rules
+## Layer 2: Governance
 
-1. **Products → Core ONLY.** No direct calls to governance or infrastructure.
-2. **Core → Governance → Core.** Core calls governance services, receives signals, continues.
-3. **Core → Infrastructure.** Core writes to Bucket and emits to InsightFlow after execution.
-4. **Governance participants do NOT call each other through Core.** Sarathi may internally call Sutradhara/DGIC.
-5. **Agents execute within Core's process.** No external agent calls (except configured HTTP agents).
-6. **trace_id flows TOP-DOWN.** Generated at Layer 2 (Core), propagated to all lower layers.
+| Participant | Role | Failure Mode |
+|---|---|---|
+| **Sovereign** | Risk assessment (ALLOW/DENY) | FAIL-CLOSED |
+| **CET** | Contract compilation (KSML → SUM-SCRIPT) | FAIL-CLOSED / fallback |
+
+**Responsibility:** Determine whether execution should proceed and what contract governs it.
+**Sovereign Input:** `{"text": "..."}` → Output: `{decision, risk_category, risk_score}`
+**CET Input:** KSML 7-key object → Output: `{contract_hash, sum_script}`
+**Ordering:** Sovereign and CET can execute in parallel (both depend only on Core).
+
+---
+
+## Layer 3: Enforcement
+
+| Participant | Role | Failure Mode |
+|---|---|---|
+| **Sarathi** | Cryptographic enforcement + JWT issuance | FAIL-CLOSED |
+| **Bridge** | JWT validation + continuity enforcement | FAIL-CLOSED |
+
+**Responsibility:** Cryptographically verify execution authorization and validate token chain.
+**Sarathi Input:** Token + trace_id + cet_hash → Output: `{status: ALLOW, jwt: "..."}`
+**Bridge Input:** JWT Bearer + bridge_signature → Output: `{status: completed}`
+**Ordering:** Sarathi MUST complete before Bridge (Bridge needs Sarathi's JWT).
+**JWT Flow:** Sarathi issues RS256 JWT → Core passes as Bearer → Bridge verifies via JWKS.
+
+---
+
+## Layer 4: Execution
+
+| Participant | Role | Failure Mode |
+|---|---|---|
+| **Core Agent** | Task processing | Agent-level errors |
+
+**Responsibility:** Execute the actual task (e.g., edumentor_agent for educational content).
+**Prerequisite:** All Layer 2 and Layer 3 checks must pass.
+
+---
+
+## Layer 5: Truth & Telemetry
+
+| Participant | Role | Failure Mode |
+|---|---|---|
+| **Bucket** | Immutable truth store (append-only hash chain) | FAIL-CLOSED |
+| **InsightFlow** | Dataset registry (telemetry, provenance) | GRACEFUL-FALLBACK |
+
+**Responsibility:** Record execution evidence for auditability and telemetry.
+**Bucket:** Append-only with parent_hash chain integrity.
+**InsightFlow:** Dataset registration with extended_metadata. Non-blocking — local JSONL fallback.
+**Ordering:** Bucket is mandatory (FAIL-CLOSED). InsightFlow is optional (GRACEFUL-FALLBACK).
+
+---
+
+## Layer Authority Matrix
+
+| Layer | Authority | Owner | Can Block Execution? |
+|---|---|---|---|
+| Origin | Trace generation | Core (Raj) | No |
+| Governance | Risk + Contract | Sovereign (Aakanksha) + CET (Tanvi) | Yes |
+| Enforcement | Auth + Validation | Sarathi (Rajaryan) + Bridge (Ranjit) | Yes |
+| Execution | Task processing | Core (Raj) | N/A |
+| Truth | Evidence recording | Bucket (Siddhesh) + InsightFlow (Vijay) | Bucket: Yes, InsightFlow: No |
+
+---
+
+## Cross-Layer Dependencies
+
+| Source Layer | Target Layer | Dependency | Type |
+|---|---|---|---|
+| L1 → L2 | Origin → Governance | trace_id | Required |
+| L2 → L3 | Governance → Enforcement | decision_hash, contract_hash | Required |
+| L3 → L3 | Sarathi → Bridge | JWT (via Core) | Required |
+| L3 → L3 | Sarathi JWKS → Bridge | RSA public key | Required |
+| L3 → L4 | Enforcement → Execution | Authorization | Required |
+| L4 → L5 | Execution → Truth | task_id, result | Required |
+| L1 → L5 | Origin → Truth | trace_id | Required |

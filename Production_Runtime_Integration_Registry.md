@@ -1,142 +1,117 @@
-# Production Runtime Integration Registry — Phase IV
+# Production Runtime Integration Registry — Phase IV Final
 
-Version: 1.0.0
-Date: 2026-06-19
-Lead: Raj Prajapati
-Classification: PRODUCTION RUNTIME REGISTRY
-
----
-
-## Purpose
-
-This registry is the **authoritative runtime map** for BHIV Core's TANTRA ecosystem.
-Every participant, product, and integration point is documented here.
-
-Future products integrate by following this registry — not by creating custom integrations.
+Version: 3.0.0
+Date: 2026-06-20
+Status: ✅ **8/8 SUCCESS**
 
 ---
 
-## Registry Documents
+## Overview
 
-| # | Document | Purpose |
+This is the authoritative runtime map for the TANTRA ecosystem. It defines what plugs into BHIV Core, why, when, which layer it belongs to, which authority it owns (and does NOT own), and what trace it produces.
+
+---
+
+## Registry Architecture
+
+All participants are registered in `TANTRA_INTEGRATION_REGISTRY.json`. New participants are added by updating the JSON file — no hardcoded logic changes required.
+
+### Registration Requirements
+
+1. **System Name** — Unique identifier
+2. **Owner** — Responsible person
+3. **Layer** — Which runtime layer (Origin, Governance, Enforcement, Execution, Truth)
+4. **URL** — Production endpoint
+5. **Protocol** — HTTP method + path
+6. **Schema** — Exact input/output format
+7. **Auth** — Authentication method
+8. **Failure Mode** — FAIL-CLOSED or GRACEFUL-FALLBACK
+9. **Trace Requirements** — What trace fields are produced/consumed
+
+---
+
+## Registered Participants
+
+| # | System | Owner | Layer | URL | Status |
+|---|---|---|---|---|---|
+| 1 | BHIV Core | Raj Prajapati | Origin | localhost:8003 | ✅ Operational |
+| 2 | Sovereign | Aakanksha | Governance | text-risk-scoring-service.onrender.com | ✅ Operational |
+| 3 | CET | Tanvi | Governance | sl-validator-parity.onrender.com | ✅ Operational |
+| 4 | Sarathi | Rajaryan | Enforcement | text-risk-scoring-service.onrender.com | ✅ Operational |
+| 5 | Bridge | Ranjit | Enforcement | evoke-oboe-stilt.ngrok-free.dev | ✅ Operational |
+| 6 | Bucket | Siddhesh | Truth | bhiv-bucket.onrender.com | ✅ Operational |
+| 7 | InsightFlow | Vijay | Truth | 04d1-152-59-6-179.ngrok-free.app | ✅ Operational |
+
+---
+
+## Authority Boundaries
+
+Each participant owns specific authority. Core MUST NOT replicate or override these authorities.
+
+| Participant | OWNS | DOES NOT OWN |
 |---|---|---|
-| 1 | [Participant_Runtime_Catalog.md](Participant_Runtime_Catalog.md) | Full metadata for all 7 infrastructure participants |
-| 2 | [Product_Attachment_Framework.md](Product_Attachment_Framework.md) | How 10 products attach to Core |
-| 3 | [Runtime_Layer_Map.md](Runtime_Layer_Map.md) | 6-layer ecosystem with responsibilities and authority limits |
-| 4 | [Production_Readiness_Matrix.md](Production_Readiness_Matrix.md) | 11-dimension readiness for all participants |
-| 5 | [Canonical_Runtime_Sequence.md](Canonical_Runtime_Sequence.md) | 12-transition execution sequence with protocol details |
-| 6 | [Runtime_Dependency_Graph.md](Runtime_Dependency_Graph.md) | Dependencies, recovery, startup, shutdown, replay order |
+| **Core** | Trace generation, orchestration, agent execution | Risk decisions, contract compilation, enforcement |
+| **Sovereign** | Risk assessment, ALLOW/DENY decisions | Contract compilation, enforcement, truth storage |
+| **CET** | KSML compilation, SUM-SCRIPT generation | Risk decisions, enforcement, execution |
+| **Sarathi** | Cryptographic enforcement, JWT issuance | Risk decisions, contract compilation, execution |
+| **Bridge** | JWT validation, continuity enforcement | JWT issuance, risk decisions, execution |
+| **Bucket** | Immutable truth storage, hash chain | Risk decisions, enforcement, execution |
+| **InsightFlow** | Dataset registry, telemetry, provenance | Risk decisions, enforcement, truth storage |
 
 ---
 
-## Participant Summary
+## Integration Protocols
 
-| Participant | Owner | Layer | Status | Authority Owned |
-|---|---|---|---|---|
-| BHIV Core | Raj | Orchestration | CONVERGED | trace_id, execution gate, agent routing, replay |
-| Sovereign | Aakanksha | Governance | INTEGRATED | Risk scoring, decision |
-| CET | Tanvi | Governance | CONNECTED | Contract compilation |
-| Sarathi | Rajaryan | Governance | CONNECTED | Enforcement, token issuance |
-| Bridge | Ranjit | Governance | CONNECTED | Validation gate |
-| Bucket | Siddhesh | Infrastructure | INTEGRATED | Truth storage, hash chain |
-| InsightFlow | Vijay | Observability | INTEGRATED | Telemetry, dataset registry |
+### Authentication Methods
 
----
+| Participant | Auth Type | Details |
+|---|---|---|
+| Sovereign | None | Open endpoint |
+| CET | None | Open endpoint |
+| Sarathi | SHA-256 Hash | signature_hash = SHA-256(execution_id\|rajya_verdict\|timestamp) |
+| Bridge | JWT Bearer | RS256 via JWKS, iss/aud validation, continuity check |
+| Bucket | Schema validation | Field-level validation, parent_hash chain |
+| InsightFlow | API Key | X-API-Key header |
 
-## Authority Boundary Map
+### JWT Chain
 
-### Core OWNS:
-- trace_id generation (uuid4)
-- X-Trace-Id propagation
-- Execution gating (token validation)
-- Agent routing
-- Replay reconstruction
-- Bucket write orchestration
-- InsightFlow emission orchestration
-
-### Core DOES NOT OWN:
-- Decision making → Sovereign
-- Contract compilation → CET
-- Enforcement policy → Sarathi
-- Validation rules → Bridge
-- Truth storage schema → Bucket
-- Telemetry schema → InsightFlow
-- Risk scoring → Sovereign
-- Token issuance → Sarathi
-
----
-
-## Adding a New Participant
-
-1. Add entry to `TANTRA_INTEGRATION_REGISTRY.json` using the extension template
-2. Document in `Participant_Runtime_Catalog.md`
-3. Create HTTP client in `core/authority/` following existing patterns
-4. Wire URL in `.env.live`
-5. Add trace header propagation (X-Trace-Id)
-6. Define failure behaviour (FAIL-CLOSED or GRACEFUL-FALLBACK)
-7. Add health check to monitoring
-8. Run integration test suite
-
-**No architectural redesign required.**
-
----
-
-## Adding a New Product
-
-1. Define product attachment in `Product_Attachment_Framework.md`
-2. Choose agent(s) for execution
-3. Call Core POST /execute_task with execution_token and trace_id
-4. Handle Core responses (200, 403, 500)
-5. Log trace_id in product telemetry
-6. Verify Bucket write appears for every execution
-7. Register canonical_id format with InsightFlow
-
-**No Core code changes required.**
-
----
-
-## Integration Evidence
-
-### Sample Participant Registration (Sovereign)
-
-```json
-{
-  "sovereign": {
-    "system_name": "Sovereign Core",
-    "owner": "Aakanksha",
-    "ecosystem_layers": ["Governance"],
-    "runtime_role": "Decision authority",
-    "api_endpoints": ["POST /analyze"],
-    "trace_participation": "PASSIVE",
-    "failure_behaviour": "FAIL-CLOSED",
-    "authority_owned": ["risk_scoring", "risk_categorization"],
-    "authority_not_owned": ["execution", "enforcement", "truth_storage"],
-    "current_status": "OPERATIONAL",
-    "canonical_version": "1.0"
-  }
-}
+```
+Sarathi (Issues JWT)
+    │ RS256 signed
+    │ Claims: iss=tantra-sarathi, aud=tantra-bridge
+    │         execution_id, trace_id, cet_hash, jti
+    ▼
+Core (Passes JWT)
+    │ Authorization: Bearer <JWT>
+    │ X-Sarathi-Execution-Id, X-Sarathi-Trace-Id, X-Sarathi-Cet-Hash
+    ▼
+Bridge (Validates JWT)
+    │ Fetches JWKS from Sarathi /.well-known/jwks.json
+    │ Verifies RS256 signature, iss, aud, kid
+    │ Cross-validates execution_id, trace_id, cet_hash
+    ▼
+Execution proceeds
 ```
 
-### Sample Product Attachment (UniGuru)
+---
 
-```yaml
-product: UniGuru
-trigger: HTTP API (student query)
-execution_path: UniGuru → Core /execute_task → edumentor_agent
-trace_path: Core generates trace_id → propagated to all downstream
-replay_path: GET /trace/{trace_id}
-observability: BHIV-DS-UNIGURU-GUIDANCE-{SEQ}
-truth_persistence: Bucket (guidance_record)
-governance: Sovereign → Bucket → InsightFlow
-```
+## How Products Attach
 
-### Live Integration Evidence
+Products attach to BHIV Core by:
 
-| Call | Service | Result | Proof |
-|---|---|---|---|
-| POST /analyze | Sovereign | ALLOW, risk=LOW | logs/live_sovereign_proof.json |
-| POST /bucket/artifact | Bucket | hash c1b89f0e stored | logs/full_tantra_live_chain_proof.json |
-| POST /api/v1/datasets/ | InsightFlow | HTTP 201, ACTIVE | dataset BHIV-DS-TANTRA-CHAIN-DC3F760F |
-| POST /execute | Bridge | HTTP 401 (auth enforced) | LIVE_TRACE_PACKET.md |
-| GET /health | CET | HTTP 200 OK | LIVE_TRACE_PACKET.md |
-| POST /sarathi/enforce | Sarathi | HTTP 422 (alive) | LIVE_TRACE_PACKET.md |
+1. Registering in `TANTRA_INTEGRATION_REGISTRY.json`
+2. Implementing the required protocol (HTTP endpoint)
+3. Accepting `X-Trace-Id` header for trace continuity
+4. Returning structured JSON responses
+5. Declaring failure mode (FAIL-CLOSED or GRACEFUL-FALLBACK)
+
+No hardcoded logic changes required. Configuration-driven integration.
+
+---
+
+## Verification
+
+All 7 participants verified with live HTTP on 2026-06-20:
+- **Proof trace_id:** `2a1556b2-1c5a-41f4-9c19-4e9399be5443`
+- **Result:** 8/8 SUCCESS
+- **Proof file:** `logs/full_tantra_v4_final_proof.json`

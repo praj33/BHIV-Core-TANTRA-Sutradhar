@@ -1,184 +1,137 @@
-# Canonical Runtime Sequence — Phase IV
+# Canonical Runtime Sequence — Phase IV Final
 
-Version: 1.0.0
-Date: 2026-06-19
-
----
-
-## Full TANTRA Runtime Execution Sequence
-
-```
-User
-  ↓
-Application (Product Layer)
-  ↓
-BHIV Core (Orchestration Layer)
-  ↓
-Sovereign (Governance — Decision)
-  ↓
-CET (Governance — Contract)
-  ↓
-Sarathi (Governance — Enforcement)
-  ↓
-Bridge (Governance — Validation)
-  ↓
-Execution (Agent Layer)
-  ↓
-Bucket (Infrastructure — Truth)
-  ↓
-InsightFlow (Observability — Telemetry)
-  ↓
-Replay (Reconstruction)
-  ↓
-Operations Dashboard (Monitoring)
-  ↓
-Human Review (Governance)
-```
+Version: 3.0.0
+Date: 2026-06-20
+Status: ✅ **8/8 VERIFIED**
 
 ---
 
-## Transition Details
+## Overview
 
-### Transition 1: User → Application
+This document defines the exact execution sequence of the TANTRA runtime chain. Every production execution follows this 8-step sequence. Each step is proven with live HTTP evidence.
 
-| Field | Value |
-|---|---|
-| **Input** | User query, action, or request |
-| **Output** | Structured request payload |
-| **Protocol** | HTTP / WebSocket / Event |
-| **Validation** | Product-level input validation |
-| **Failure Handling** | Product returns user-facing error |
-| **Trace Continuation** | No trace_id yet — product may create session_id |
-| **Authority Boundary** | Product owns UX and input formatting |
+---
 
-### Transition 2: Application → BHIV Core
+## Sequence Diagram
 
-| Field | Value |
-|---|---|
-| **Input** | `{agent, input, input_type, tags, execution_token, trace_id}` |
-| **Output** | `{task_id, agent_output, status, trace_id, bucket_write}` |
-| **Protocol** | HTTP POST /execute_task |
-| **Validation** | execution_token and trace_id MUST be present → 403 if missing |
-| **Failure Handling** | Core returns HTTP 403/500 with structured error |
-| **Trace Continuation** | trace_id GENERATED here (uuid4). This is the trace origin. |
-| **Authority Boundary** | Core owns trace_id generation, agent routing, execution gating |
+```mermaid
+sequenceDiagram
+    participant User
+    participant Core as BHIV Core
+    participant Sov as Sovereign
+    participant CET as CET Compiler
+    participant Sar as Sarathi Gate
+    participant Brg as Bridge
+    participant Exec as Execution
+    participant Bkt as Bucket
+    participant Ins as InsightFlow
 
-### Transition 3: BHIV Core → Sovereign
+    User->>Core: Request (text input)
+    Note over Core: Step 1: Generate trace_id (uuid4)
 
-| Field | Value |
-|---|---|
-| **Input** | `{text: "input to evaluate"}` |
-| **Output** | `{risk_score, risk_category, confidence_score}` |
-| **Protocol** | HTTP POST /analyze with X-Trace-Id header |
-| **Validation** | Response must contain risk_category. Core maps: LOW/MEDIUM→ALLOW, HIGH/CRITICAL→DENY |
-| **Failure Handling** | FAIL-CLOSED — ConnectionError raised, execution aborted |
-| **Trace Continuation** | X-Trace-Id header propagated. decision_hash computed from response. |
-| **Authority Boundary** | Sovereign owns risk scoring. Core owns decision mapping. |
+    Core->>Sov: POST /analyze {text} + X-Trace-Id
+    Sov-->>Core: {decision: ALLOW, risk: LOW}
+    Note over Core: Step 2: Sovereign Decision
 
-### Transition 4: BHIV Core → CET
+    Core->>CET: POST /cet/compile {KSML input}
+    CET-->>Core: {contract_hash, sum_script}
+    Note over Core: Step 3: CET Contract
 
-| Field | Value |
-|---|---|
-| **Input** | `{trace_id, input, decision_hash, timestamp}` |
-| **Output** | `{contract_hash, compiled_contract}` |
-| **Protocol** | HTTP POST /cet/compile with X-Trace-Id header |
-| **Validation** | Response must contain contract_hash |
-| **Failure Handling** | FAIL-CLOSED (USE_FULL_TANTRA=true) or internal hash fallback |
-| **Trace Continuation** | trace_id in payload and X-Trace-Id header |
-| **Authority Boundary** | CET owns contract compilation. Core provides inputs. |
+    Core->>Sar: POST /sarathi/enforce {token + trace_id + cet_hash}
+    Sar-->>Core: {status: ALLOW, jwt: "eyJhbG..."}
+    Note over Core: Step 4: Sarathi Enforcement + JWT
 
-### Transition 5: BHIV Core → Sarathi
+    Core->>Brg: POST /execute {body + bridge_signature} + Bearer JWT
+    Brg-->>Core: {status: completed}
+    Note over Core: Step 5: Bridge Validation
 
-| Field | Value |
-|---|---|
-| **Input** | `{trace_id, decision, execution_payload, decision_hash}` |
-| **Output** | `{status: CLEARED/BLOCKED, execution_token, validation_result}` |
-| **Protocol** | HTTP POST /sarathi/enforce with X-Trace-Id header |
-| **Validation** | status must be CLEARED. BLOCKED = SarathiEnforcementError |
-| **Failure Handling** | FAIL-CLOSED — no token = no execution |
-| **Trace Continuation** | X-Trace-Id header. decision_hash verified. execution_token issued. |
-| **Authority Boundary** | Sarathi owns enforcement policy and token issuance. Core cannot issue tokens. |
+    Note over Core: Step 6: Execution (agent runs)
 
-### Transition 6: BHIV Core → Bridge
+    Core->>Bkt: POST /bucket/artifact {payload + parent_hash}
+    Bkt-->>Core: {hash, storage_type: append_only}
+    Note over Core: Step 7: Bucket Truth Write
 
-| Field | Value |
-|---|---|
-| **Input** | `{trace_id, execution_token, contract_hash, timestamp}` |
-| **Output** | `{validation_status: VALIDATED/REJECTED}` |
-| **Protocol** | HTTP POST /execute with X-Trace-Id + ngrok-skip-browser-warning headers |
-| **Validation** | VALIDATED = proceed. REJECTED = BridgeError |
-| **Failure Handling** | FAIL-CLOSED (USE_FULL_TANTRA=true) or internal validation |
-| **Trace Continuation** | X-Trace-Id header and trace_id in payload |
-| **Authority Boundary** | Bridge owns validation gate logic. Core provides credentials. |
+    Core->>Ins: POST /api/v1/datasets/ {dataset + extended_metadata}
+    Ins-->>Core: {id, status: ACTIVE}
+    Note over Core: Step 8: InsightFlow Telemetry
+```
 
-### Transition 7: BHIV Core → Execution
+---
 
-| Field | Value |
-|---|---|
-| **Input** | `{agent, input, input_type, tags}` via gated_execute |
-| **Output** | `{task_id, agent_output, status}` |
-| **Protocol** | Internal Python call (execute_task) |
-| **Validation** | Token validated by gated_execute. Replay prevention checked. |
-| **Failure Handling** | ExecutionBlockedError if token invalid/replayed |
-| **Trace Continuation** | trace_id passed through to agent context |
-| **Authority Boundary** | Agent owns domain execution. Core owns gating. |
+## Step Details
 
-### Transition 8: BHIV Core → Bucket
+### Step 1: Trace Origin
+- **Actor:** Core
+- **Action:** Generate uuid4 trace_id
+- **Output:** trace_id propagated to all subsequent steps
+- **Failure:** Cannot fail (local)
 
-| Field | Value |
-|---|---|
-| **Input** | `{artifact_id, artifact_type, timestamp_utc, schema_version, source_module_id, payload}` |
-| **Output** | `{hash, parent_hash, storage_type, artifact_id, timestamp}` |
-| **Protocol** | HTTP POST /bucket/artifact |
-| **Validation** | Bucket validates envelope structure (not content). Missing fields = 400. |
-| **Failure Handling** | FAIL-CLOSED — BucketWriteError = execution marked FAILED |
-| **Trace Continuation** | trace_id inside payload. Hash chain extends. |
-| **Authority Boundary** | Bucket owns truth storage schema. Core provides payload. |
+### Step 2: Sovereign Decision
+- **Actor:** Core → Sovereign
+- **Protocol:** POST /analyze
+- **Input:** `{"text": "..."}` + `X-Trace-Id` header
+- **Output:** `{decision, risk_category, risk_score}`
+- **Decision Logic:** risk_category ∈ {LOW, MEDIUM} → ALLOW, else DENY
+- **Failure Mode:** FAIL-CLOSED (unreachable = execution blocked)
 
-### Transition 9: BHIV Core → InsightFlow
+### Step 3: CET Contract Compilation
+- **Actor:** Core → CET
+- **Protocol:** POST /cet/compile
+- **Input:** KSML object with 7 keys (decision_id, trace_id, intent, actors, constraints, context, timestamp)
+- **Output:** `{contract_hash, sum_script}`
+- **Schema:** actors=dict, constraints=[{left,operator,right}], intent="TransferFunds"
+- **Failure Mode:** FAIL-CLOSED or internal fallback hash
 
-| Field | Value |
-|---|---|
-| **Input** | `{canonical_id, dataset_name, owner_name, domain_primary, source_system, tags, metadata}` |
-| **Output** | `{id, canonical_id, status, registered_at}` |
-| **Protocol** | HTTP POST /api/v1/datasets/ with X-API-Key header |
-| **Validation** | canonical_id must follow BHIV-DS-DOMAIN-NAME-XXX pattern |
-| **Failure Handling** | GRACEFUL-FALLBACK — only non-blocking participant. Falls back to local JSONL. |
-| **Trace Continuation** | trace_id inside metadata |
-| **Authority Boundary** | InsightFlow owns dataset registration schema. Core provides trace data. |
+### Step 4: Sarathi Enforcement
+- **Actor:** Core → Sarathi
+- **Protocol:** POST /sarathi/enforce
+- **Input:** `{token: {execution_id, rajya_verdict, token_status, timestamp, signature_hash}, trace_id, cet_hash}`
+- **Signature:** signature_hash = SHA-256(`execution_id|rajya_verdict|timestamp`)
+- **Output:** `{status: "ALLOW", jwt: "eyJhbG..."}`
+- **JWT Claims:** iss=tantra-sarathi, aud=tantra-bridge, execution_id, trace_id, cet_hash, jti
+- **Failure Mode:** FAIL-CLOSED (blocked = SarathiEnforcementError)
 
-### Transition 10: InsightFlow → Replay
+### Step 5: Bridge Validation
+- **Actor:** Core → Bridge
+- **Protocol:** POST /execute
+- **Input Body:** `{trace_id, execution_id, execution_token, contract_hash, cet_hash, bridge_signature, timestamp}`
+- **Input Headers:** `Authorization: Bearer <JWT>`, `X-Sarathi-Execution-Id`, `X-Sarathi-Trace-Id`, `X-Sarathi-Cet-Hash`
+- **bridge_signature:** SHA-256(`trace_id|execution_id|contract_hash`)
+- **Validation:** JWT signature (RS256 via JWKS), iss/aud, continuity (execution_id + trace_id + cet_hash)
+- **Output:** `{trace_id, execution_id, status: "completed", result: {...}}`
+- **Failure Mode:** FAIL-CLOSED (401/403 = execution blocked)
 
-| Field | Value |
-|---|---|
-| **Input** | `trace_id` |
-| **Output** | Reconstructed execution lineage (all signals, all writes) |
-| **Protocol** | HTTP GET /trace/{trace_id} on Core |
-| **Validation** | Aggregates from Bucket, InsightFlow, local logs |
-| **Failure Handling** | 404 if trace_id not found in any source |
-| **Trace Continuation** | Final reconstruction — all trace signals aggregated |
-| **Authority Boundary** | Core owns replay reconstruction. Bucket is primary source. InsightFlow is secondary. |
+### Step 6: Execution
+- **Actor:** Core (local agent)
+- **Action:** Agent processes the task
+- **Output:** task_id, execution result
+- **Failure:** Agent-level error handling
 
-### Transition 11: Replay → Operations Dashboard
+### Step 7: Bucket Truth Write
+- **Actor:** Core → Bucket
+- **Protocol:** POST /bucket/artifact
+- **Pre-step:** GET /bucket/chain-state → get parent_hash
+- **Input:** `{artifact_id, artifact_type, timestamp_utc, schema_version, source_module_id, parent_hash, payload}`
+- **Output:** `{hash, storage_type: "append_only"}`
+- **Integrity:** parent_hash chain-links to previous artifact
+- **Failure Mode:** FAIL-CLOSED (BucketWriteError = execution FAILED)
 
-| Field | Value |
-|---|---|
-| **Input** | Reconstructed trace data |
-| **Output** | Visual dashboard, alerts, SLA metrics |
-| **Protocol** | HTTP / WebSocket (future) |
-| **Validation** | Dashboard validates trace completeness |
-| **Failure Handling** | Dashboard offline = no user impact (data preserved in Bucket) |
-| **Trace Continuation** | Read-only — no trace modification |
-| **Authority Boundary** | Dashboard owns visualization. Core owns data. |
+### Step 8: InsightFlow Telemetry
+- **Actor:** Core → InsightFlow
+- **Protocol:** POST /api/v1/datasets/
+- **Input:** `{canonical_id, dataset_name, description, owner_name, owner_team, domain_primary, source_system, domain_tags, extended_metadata}`
+- **Headers:** `X-API-Key`
+- **Output:** `{id, status: "ACTIVE"}`
+- **Failure Mode:** GRACEFUL-FALLBACK (local JSONL on failure — non-blocking)
 
-### Transition 12: Operations Dashboard → Human Review
+---
 
-| Field | Value |
-|---|---|
-| **Input** | Dashboard alerts, trace anomalies, governance flags |
-| **Output** | Human decision (approve, investigate, escalate) |
-| **Protocol** | UI interaction |
-| **Validation** | Human judgment |
-| **Failure Handling** | Escalation to governance team |
-| **Trace Continuation** | Human review decision recorded in Bucket (future) |
-| **Authority Boundary** | Human owns final judgment. System provides evidence. |
+## Invariants
+
+1. **trace_id continuity:** Same trace_id from Step 1 through Step 8
+2. **execution_id continuity:** Same execution_id from Step 4 through Step 5 and Step 7
+3. **contract_hash continuity:** Same contract_hash from Step 3 through Steps 4, 5, 7
+4. **Fail-closed governance:** Steps 2, 4, 5, 7 block execution on failure
+5. **JWT chain:** Sarathi issues → Core passes → Bridge validates
+6. **Hash chain integrity:** Bucket writes are chain-linked via parent_hash
+7. **Append-only truth:** Bucket artifacts are immutable
