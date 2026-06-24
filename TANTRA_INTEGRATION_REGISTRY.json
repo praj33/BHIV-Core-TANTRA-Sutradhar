@@ -1,8 +1,14 @@
 {
-  "registry_version": "3.0.0",
-  "last_updated": "2026-06-20T08:23:51Z",
-  "status": "8/8 SUCCESS",
+  "registry_version": "4.0.0",
+  "last_updated": "2026-06-22T10:17:00Z",
+  "status": "integration_verified",
+  "chain_status": "8/8 operational",
   "proof_trace_id": "2a1556b2-1c5a-41f4-9c19-4e9399be5443",
+  "schema": {
+    "version_negotiation": true,
+    "capability_discovery": true,
+    "lifecycle_states": ["initializing", "ready", "degraded", "maintenance", "read_only", "draining", "stopped"]
+  },
   "participants": {
     "bhiv_core": {
       "name": "BHIV Core",
@@ -12,11 +18,21 @@
       "url": "http://localhost:8003",
       "deployment": "local",
       "status": "operational",
+      "lifecycle_state": "ready",
+      "canonical_version": "1.0.0",
+      "min_compatible_version": "1.0.0",
       "failure_mode": "fail-closed",
+      "capabilities": {
+        "protocols": ["http/1.1"],
+        "features": ["sync_execution", "trace_generation", "jwt_passthrough", "fail_closed_governance", "replay_reconstruction", "graceful_fallback"],
+        "auth_methods": ["bearer_jwt_passthrough"],
+        "data_formats": ["application/json"]
+      },
       "trace_requirements": {
         "generates": ["trace_id"],
         "propagates": ["X-Trace-Id"]
-      }
+      },
+      "health_endpoint": "/health"
     },
     "sovereign": {
       "name": "Sovereign",
@@ -28,7 +44,16 @@
       "method": "POST",
       "deployment": "render",
       "status": "operational",
+      "lifecycle_state": "ready",
+      "canonical_version": "1.0.0",
+      "min_compatible_version": "1.0.0",
       "failure_mode": "fail-closed",
+      "capabilities": {
+        "protocols": ["http/1.1"],
+        "features": ["sync_http", "risk_scoring", "content_analysis"],
+        "auth_methods": ["none"],
+        "data_formats": ["application/json"]
+      },
       "input_schema": {
         "text": "string"
       },
@@ -41,7 +66,8 @@
       "trace_requirements": {
         "receives": ["X-Trace-Id"],
         "produces": ["decision_hash"]
-      }
+      },
+      "health_endpoint": "/"
     },
     "cet": {
       "name": "CET (Compliance Execution Transpiler)",
@@ -53,7 +79,17 @@
       "method": "POST",
       "deployment": "render",
       "status": "operational",
+      "lifecycle_state": "ready",
+      "canonical_version": "1.0.0",
+      "min_compatible_version": "1.0.0",
       "failure_mode": "fail-closed",
+      "capabilities": {
+        "protocols": ["http/1.1"],
+        "features": ["sync_http", "ksml_compilation", "constraint_validation", "sum_script_generation"],
+        "auth_methods": ["none"],
+        "data_formats": ["application/json"],
+        "supported_intents": ["TransferFunds"]
+      },
       "input_schema": {
         "trace_id": "string",
         "input": {
@@ -75,7 +111,7 @@
         "receives": ["trace_id", "X-Trace-Id"],
         "produces": ["contract_hash"]
       },
-      "notes": "Currently only supports intent=TransferFunds. Educational adapter pending."
+      "health_endpoint": "/health"
     },
     "sarathi": {
       "name": "Sarathi (Enforcement Gate)",
@@ -87,7 +123,17 @@
       "method": "POST",
       "deployment": "render",
       "status": "operational",
+      "lifecycle_state": "ready",
+      "canonical_version": "1.0.0",
+      "min_compatible_version": "1.0.0",
       "failure_mode": "fail-closed",
+      "capabilities": {
+        "protocols": ["http/1.1"],
+        "features": ["sync_http", "jwt_issuance", "sha256_verification", "replay_prevention_jti", "cryptographic_binding"],
+        "auth_methods": ["sha256_signature_hash"],
+        "signature_algorithms": ["RS256"],
+        "data_formats": ["application/json"]
+      },
       "input_schema": {
         "token": {
           "execution_id": "string",
@@ -117,7 +163,8 @@
       "trace_requirements": {
         "receives": ["trace_id", "cet_hash"],
         "produces": ["execution_id", "jwt"]
-      }
+      },
+      "health_endpoint": "/"
     },
     "bridge": {
       "name": "Bridge (Execution Gate)",
@@ -129,7 +176,17 @@
       "method": "POST",
       "deployment": "ngrok",
       "status": "operational",
+      "lifecycle_state": "ready",
+      "canonical_version": "1.0.0",
+      "min_compatible_version": "1.0.0",
       "failure_mode": "fail-closed",
+      "capabilities": {
+        "protocols": ["http/1.1"],
+        "features": ["sync_http", "jwt_validation", "jwks_verification", "continuity_enforcement", "bridge_signature_validation"],
+        "auth_methods": ["bearer_jwt"],
+        "signature_algorithms": ["RS256", "EdDSA"],
+        "data_formats": ["application/json"]
+      },
       "input_schema": {
         "body": {
           "trace_id": "string",
@@ -160,12 +217,12 @@
         "jwks_source": "sarathi_url/.well-known/jwks.json",
         "continuity_fields": ["execution_id", "trace_id", "cet_hash"]
       },
-      "health_endpoint": "/health",
       "auth": "jwt-bearer",
       "trace_requirements": {
         "receives": ["trace_id", "execution_id", "cet_hash"],
         "validates": ["jwt_signature", "iss", "aud", "continuity"]
-      }
+      },
+      "health_endpoint": "/health"
     },
     "bucket": {
       "name": "Bucket (Immutable Truth Store)",
@@ -177,7 +234,16 @@
       "method": "POST",
       "deployment": "render",
       "status": "operational",
+      "lifecycle_state": "ready",
+      "canonical_version": "1.0.0",
+      "min_compatible_version": "1.0.0",
       "failure_mode": "fail-closed",
+      "capabilities": {
+        "protocols": ["http/1.1"],
+        "features": ["sync_http", "append_only", "hash_chain", "parent_hash_linking", "chain_state_query", "schema_validation", "replay_validation"],
+        "auth_methods": ["schema_validation"],
+        "data_formats": ["application/json"]
+      },
       "input_schema": {
         "artifact_id": "uuid string",
         "artifact_type": "string",
@@ -196,7 +262,8 @@
       "trace_requirements": {
         "receives": ["trace_id (in payload)"],
         "produces": ["artifact_hash", "chain_link"]
-      }
+      },
+      "health_endpoint": "/health"
     },
     "insightflow": {
       "name": "InsightFlow (Dataset Registry)",
@@ -208,9 +275,18 @@
       "method": "POST",
       "deployment": "ngrok",
       "status": "operational",
+      "lifecycle_state": "ready",
+      "canonical_version": "1.0.0",
+      "min_compatible_version": "1.0.0",
       "failure_mode": "graceful-fallback",
+      "capabilities": {
+        "protocols": ["http/1.1"],
+        "features": ["sync_http", "crud_datasets", "schema_management", "relationship_tracking", "provenance", "discovery", "onboarding", "audit_logs"],
+        "auth_methods": ["x_api_key"],
+        "data_formats": ["application/json"]
+      },
       "input_schema": {
-        "canonical_id": "string (e.g. BHIV-DS-TANTRA-V4-2A1556B2)",
+        "canonical_id": "string",
         "dataset_name": "string",
         "description": "string",
         "owner_name": "string",
@@ -226,13 +302,13 @@
         "canonical_id": "string"
       },
       "api_surface": ["datasets", "schemas", "relationships", "provenance", "discovery", "onboarding", "audit"],
-      "health_endpoint": "/health",
       "auth": "x-api-key",
       "api_key": "vijay_insightflow_8c482c6e08fdbeba61800a8a09047630",
       "trace_requirements": {
         "receives": ["trace_id (in extended_metadata)"],
         "produces": ["dataset_id", "canonical_id"]
-      }
+      },
+      "health_endpoint": "/health"
     }
   }
 }
